@@ -7,21 +7,13 @@ import net.corda.core.contracts.TypeOnlyCommandData
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.identity.AbstractParty
 import net.corda.core.internal.packageName
-import net.corda.finance.DOLLARS
-import net.corda.finance.POUNDS
 import net.corda.finance.schemas.CashSchemaV1
 import net.corda.testing.node.MockServices
-import net.corda.testing.node.ledger
-import net.corda.training.ALICE
-import net.corda.training.BOB
-import net.corda.training.CHARLIE
-import net.corda.training.MINICORP
-import net.corda.training.state.IOUState
-import org.junit.Test
+import net.corda.training.state.EstadoTDBO
 
 /**
  * Practical exercise instructions for Contracts Part 2.
- * The objective here is to write some contract code that verifies a transaction to issue an [IOUState].
+ * The objective here is to write some contract code that verifies a transaction to issue an [EstadoTDBO].
  * As with the [IOUIssueTests] uncomment each unit test and run them one at a time. Use the body of the tests and the
  * task description to determine how to get the tests to pass.
  */
@@ -135,10 +127,10 @@ class IOUTransferTests {
      * Task 3.
      * TODO: Add a constraint to the contract code to ensure only the lender property can change when transferring IOUs.
      * Hint:
-     * - You can use the [IOUState.copy] method.
+     * - You can use the [EstadoTDBO.copy] method.
      * - You can compare a copy of the input to the output with the lender of the output as the lender of the input.
      * - You'll need references to the input and output ious.
-     * - Remember you need to cast the [ContractState]s to [IOUState]s.
+     * - Remember you need to cast the [ContractState]s to [EstadoTDBO]s.
      * - It's easier to take this approach then check all properties other than the lender haven't changed, including
      *   the [linearId] and the [contract]!
      */

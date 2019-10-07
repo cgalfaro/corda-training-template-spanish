@@ -5,18 +5,13 @@ import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
-import net.corda.finance.*
-import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkNotarySpec
 import net.corda.testing.node.MockNodeParameters
 import net.corda.testing.node.StartedMockNode
-import net.corda.training.contract.IOUContract
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 import org.junit.After
 import org.junit.Before
-import org.junit.Test
-import kotlin.test.assertFailsWith
 
 /**
  * Practical exercise instructions Flows part 2.
@@ -50,7 +45,7 @@ class IOUTransferFlowTests {
     /**
      * Issue an IOU on the ledger, we need to do this before we can transfer one.
      */
-    private fun issueIou(iou: IOUState): SignedTransaction {
+    private fun issueIou(iou: EstadoTDBO): SignedTransaction {
         val flow = IOUIssueFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
@@ -66,8 +61,8 @@ class IOUTransferFlowTests {
      * - This time our transaction has an input state, so we need to retrieve it from the vault!
      * - You can use the [serviceHub.vaultService.queryBy] method to get the latest linear states of a particular
      *   type from the vault. It returns a list of states matching your query.
-     * - Use the [UniqueIdentifier] which is passed into the flow to retrieve the correct [IOUState].
-     * - Use the [IOUState.withNewLender] method to create a copy of the state with a new lender.
+     * - Use the [UniqueIdentifier] which is passed into the flow to retrieve the correct [EstadoTDBO].
+     * - Use the [EstadoTDBO.withNewLender] method to create a copy of the state with a new lender.
      * - Create a Command - we will need to use the Transfer command.
      * - Remember, as we are involving three parties we will need to collect three signatures, so need to add three
      *   [PublicKey]s to the Command's signers list. We can get the signers from the input IOU and the new IOU you
@@ -122,7 +117,7 @@ class IOUTransferFlowTests {
 
     /**
      * Task 3.
-     * Check that an [IOUState] cannot be transferred to the same lender.
+     * Check that an [EstadoTDBO] cannot be transferred to the same lender.
      * TODO: You shouldn't have to do anything additional to get this test to pass. Belts and Braces!
      */
 //    @Test

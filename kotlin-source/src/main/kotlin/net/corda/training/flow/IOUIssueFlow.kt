@@ -12,7 +12,7 @@ import net.corda.core.flows.SignTransactionFlow
 import net.corda.core.flows.StartableByRPC
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 
 /**
  * This is the flow which handles issuance of new IOUs on the ledger.
@@ -22,7 +22,7 @@ import net.corda.training.state.IOUState
  */
 @InitiatingFlow
 @StartableByRPC
-class IOUIssueFlow(val state: IOUState) : FlowLogic<SignedTransaction>() {
+class IOUIssueFlow(val state: EstadoTDBO) : FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call(): SignedTransaction {
         // Placeholder code to avoid type error when running the tests. Remove before starting the flow task!
@@ -43,7 +43,7 @@ class IOUIssueFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
         val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs.single().data
-                "This must be an IOU transaction" using (output is IOUState)
+                "This must be an IOU transaction" using (output is EstadoTDBO)
             }
         }
         subFlow(signedTransactionFlow)

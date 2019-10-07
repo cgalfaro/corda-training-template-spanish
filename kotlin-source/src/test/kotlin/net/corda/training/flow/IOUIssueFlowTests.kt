@@ -1,19 +1,13 @@
 package net.corda.training.flow
 
 import net.corda.core.contracts.Command
-import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.flows.FlowLogic
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.transactions.SignedTransaction
-import net.corda.core.utilities.getOrThrow
-import net.corda.finance.*
-import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.*
 import net.corda.training.contract.IOUContract
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 import org.junit.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 /**
  * Practical exercise instructions Flows part 1.
@@ -57,7 +51,7 @@ class IOUIssueFlowTests {
      * - Create an [IOUContract.Commands.Issue] inside a new [Command].
      * -- The required signers will be the same as the state's participants
      * -- Add the [Command] to the transaction builder [addCommand].
-     * - Use the flow's [IOUState] parameter as the output state with [addOutputState]
+     * - Use the flow's [EstadoTDBO] parameter as the output state with [addOutputState]
      * - Extra credit: use [TransactionBuilder.withItems] to create the transaction instead
      * - Sign the transaction and convert it to a [SignedTransaction] using the [serviceHub.signInitialTransaction] method.
      * - Return the [SignedTransaction].

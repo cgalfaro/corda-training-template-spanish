@@ -17,7 +17,7 @@ import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.OpaqueBytes
 import net.corda.finance.contracts.asset.Cash
 import net.corda.finance.flows.CashIssueFlow
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 import java.util.*
 
 /**
@@ -49,7 +49,7 @@ class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
         val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val outputStates = stx.tx.outputs.map { it.data::class.java.name }.toList()
-                "There must be an IOU transaction." using (outputStates.contains(IOUState::class.java.name))
+                "There must be an IOU transaction." using (outputStates.contains(EstadoTDBO::class.java.name))
             }
         }
 

@@ -1,20 +1,12 @@
 package net.corda.training.contract
 
 import net.corda.core.contracts.*
-import net.corda.finance.*
-import net.corda.testing.contracts.DummyState
 import net.corda.testing.node.MockServices
-import net.corda.testing.node.ledger
-import net.corda.training.ALICE
-import net.corda.training.BOB
-import net.corda.training.DUMMY
-import net.corda.training.MINICORP
-import net.corda.training.state.IOUState
-import org.junit.*
+import net.corda.training.state.EstadoTDBO
 
 /**
  * Practical exercise instructions for Contracts Part 1.
- * The objective here is to write some contract code that verifies a transaction to issue an [IOUState].
+ * The objective here is to write some contract code that verifies a transaction to issue an [EstadoTDBO].
  * As with the [IOUStateTests] uncomment each unit test and run them one at a time. Use the body of the tests and the
  * task description to determine how to get the tests to pass.
  */
@@ -105,7 +97,7 @@ class IOUIssueTests {
 
     /**
      * Task 3.
-     * Now we need to ensure that only one [IOUState] is issued per transaction.
+     * Now we need to ensure that only one [EstadoTDBO] is issued per transaction.
      * TODO: Write a contract constraint that ensures only one output state is created in a transaction.
      * Hint: Write an additional constraint within the existing [requireThat] block which you created in the previous
      * task.
@@ -130,7 +122,7 @@ class IOUIssueTests {
 
     /**
      * Task 4.
-     * Now we need to consider the properties of the [IOUState]. We need to ensure that an IOU should always have a
+     * Now we need to consider the properties of the [EstadoTDBO]. We need to ensure that an IOU should always have a
      * positive value.
      * TODO: Write a contract constraint that ensures newly issued IOUs always have a positive value.
      * Hint: You will need a number of hints to complete this task!
@@ -140,12 +132,12 @@ class IOUIssueTests {
      *   only one element in the previous task.
      * - We need to obtain a reference to the proposed IOU for issuance from the [LedgerTransaction.outputs] list.
      *   This list is typed as a list of [ContractState]s, therefore we need to cast the [ContractState] which we return
-     *   from [single] to an [IOUState]. You can use the Kotlin keyword 'as' to cast a class. E.g.
+     *   from [single] to an [EstadoTDBO]. You can use the Kotlin keyword 'as' to cast a class. E.g.
      *
      *       val state = tx.outputStates.single() as XState
      *
-     * - When checking the [IOUState.amount] property is greater than zero, you need to check the
-     *   [IOUState.amount.quantity] field.
+     * - When checking the [EstadoTDBO.amount] property is greater than zero, you need to check the
+     *   [EstadoTDBO.amount.quantity] field.
      */
 //    @Test
 //    fun cannotCreateZeroValueIOUs() {
@@ -178,7 +170,7 @@ class IOUIssueTests {
      * For obvious reasons, the identity of the lender and borrower must be different.
      * TODO: Add a contract constraint to check the lender is not the borrower.
      * Hint:
-     * - You can use the [IOUState.lender] and [IOUState.borrower] properties.
+     * - You can use the [EstadoTDBO.lender] and [EstadoTDBO.borrower] properties.
      * - This check must be made before the checking who has signed.
      */
 //    @Test
@@ -201,10 +193,10 @@ class IOUIssueTests {
 
     /**
      * Task 6.
-     * The list of public keys which the commands hold should contain all of the participants defined in the [IOUState].
+     * The list of public keys which the commands hold should contain all of the participants defined in the [EstadoTDBO].
      * This is because the IOU is a bilateral agreement where both parties involved are required to sign to issue an
      * IOU or change the properties of an existing IOU.
-     * TODO: Add a contract constraint to check that all the required signers are [IOUState] participants.
+     * TODO: Add a contract constraint to check that all the required signers are [EstadoTDBO] participants.
      * Hint:
      * - In Kotlin you can perform a set equality check of two sets with the == operator.
      * - We need to check that the signers for the transaction are a subset of the participants list.

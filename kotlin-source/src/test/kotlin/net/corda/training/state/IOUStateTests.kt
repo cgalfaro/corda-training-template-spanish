@@ -3,92 +3,87 @@ package net.corda.training.state
 import net.corda.core.contracts.*
 import net.corda.core.identity.Party
 import net.corda.finance.*
-import net.corda.training.ALICE
-import net.corda.training.BOB
-import net.corda.training.MEGACORP
-import net.corda.training.MINICORP
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
- * Practical exercise instructions.
- * Uncomment the first unit test [hasIOUAmountFieldOfCorrectType] then run the unit test using the green arrow
- * to the left of the [IOUStateTests] class or the [hasIOUAmountFieldOfCorrectType] method.
- * Running the unit tests from [IOUStateTests] runs all of the unit tests defined in the class.
- * The test should fail because you need to make some changes to the IOUState to make the test pass. Read the TODO
- * under each task number for a description and a hint of what you need to do.
- * Once you have the unit test passing, uncomment the next test.
- * Continue until all the unit tests pass.
- * Hint: CMD / Ctrl + click on the brown type names in square brackets for that type's definition in the codebase.
+ * Instrucciones de ejercicio práctico.
+ * Descomenta el primer unit test [hasIOUAmountFieldOfCorrectType] y luego ejecuta el unit test con la flecha verde
+ * a la izquierda de la clase [IOUStateTests] o el método [hasIOUAmountFieldOfCorrectType].
+ * Ejecutando las pruebas desde [IOUStateTests] ejecuta todos los unit tests definidos en la clase.
+ * La primera prueba debería de fallar por que necesitas hacer algunos cambios al EstadoTDBO para que pase. Lea el TODO
+ * bajo cada número de tarea para una descripción y un concejo de que es necesario hacer.
+ * Una vez hayas la prueba pase, descomenta la siguiente prueba.
+ * Continúa con todas las pruebas hasta que todas pasen.
+ * Consejo: CMD / Ctrl + en los nombres color café en corchetes "[]" para su definición en el código base.
  */
 class IOUStateTests {
 
     /**
-     * Task 1.
-     * TODO: Add an 'amount' property of type [Amount] to the [IOUState] class to get this test to pass.
-     * Hint: [Amount] is a template class that takes a class parameter of the token you would like an [Amount] of.
-     * As we are dealing with cash lent from one Party to another a sensible token to use would be [Currency].
+     * Tarea 1.
+     * TODO: Agregue una propiedad 'cantidad' de tipo [Amount] a la clase [EstadoTDBO] para que esta prueba pase.
+     * Consejo: [Amount] es una clase plantilla que toma una clase como parámetro del token que quieras de [Amount].
+     * Como estamos lidiando con dinero prestado de un participante a otro hace sentioo que nuestro token sea [Currency].
      */
-//    @Test
-//    fun hasIOUAmountFieldOfCorrectType() {
-//        // Does the amount field exist?
-//        IOUState::class.java.getDeclaredField("amount")
-//        // Is the amount field of the correct type?
-//        assertEquals(IOUState::class.java.getDeclaredField("amount").type, Amount::class.java)
-//    }
+    @Test
+    fun hasIOUAmountFieldOfCorrectType() {
+        // Does the amount field exist?
+        EstadoTDBO::class.java.getDeclaredField("cantidad")
+        // Is the amount field of the correct type?
+        assertEquals(EstadoTDBO::class.java.getDeclaredField("cantidad").type, Amount::class.java)
+    }
 
     /**
-     * Task 2.
-     * TODO: Add a 'lender' property of type [Party] to the [IOUState] class to get this test to pass.
+     * Tarea 2.
+     * TODO: Agregar 'prestamista' del tipo [Party] a la clase [EstadoTDBO] para que esta prueba pase.
      */
-//    @Test
-//    fun hasLenderFieldOfCorrectType() {
-//        // Does the lender field exist?
-//        IOUState::class.java.getDeclaredField("lender")
-//        // Is the lender field of the correct type?
-//        assertEquals(IOUState::class.java.getDeclaredField("lender").type, Party::class.java)
-//    }
+    @Test
+    fun hasLenderFieldOfCorrectType() {
+        // Does the lender field exist?
+        EstadoTDBO::class.java.getDeclaredField("prestamista")
+        // Is the lender field of the correct type?
+        assertEquals(EstadoTDBO::class.java.getDeclaredField("prestamista").type, Party::class.java)
+    }
 
     /**
-     * Task 3.
-     * TODO: Add a 'borrower' property of type [Party] to the [IOUState] class to get this test to pass.
+     * Tarea 3.
+     * TODO: Agregar 'deudor' de tipo [Party] a la clase [EstadoTDBO] para que esta prueba pase.
      */
-//    @Test
-//    fun hasBorrowerFieldOfCorrectType() {
-//        // Does the borrower field exist?
-//        IOUState::class.java.getDeclaredField("borrower")
-//        // Is the borrower field of the correct type?
-//        assertEquals(IOUState::class.java.getDeclaredField("borrower").type, Party::class.java)
-//    }
+    @Test
+    fun hasBorrowerFieldOfCorrectType() {
+        // Does the borrower field exist?
+        EstadoTDBO::class.java.getDeclaredField("deudor")
+        // Is the borrower field of the correct type?
+        assertEquals(EstadoTDBO::class.java.getDeclaredField("deudor").type, Party::class.java)
+    }
 
     /**
-     * Task 4.
-     * TODO: Add a 'paid' property of type [Amount] to the [IOUState] class to get this test to pass.
-     * Hint:
-     * - We would like this property to be initialised to a zero amount of Currency upon creation of the [IOUState].
-     * - You can use the [POUNDS] extension function over [Int] to create an amount of pounds e.g. '10.POUNDS'.
-     * - This property keeps track of how much of the initial [IOUState.amount] has been settled by the borrower
-     * - You can initialise a property with a default value in a Kotlin data class like this:
+     * Tarea 4.
+     * TODO: Agregar una propiedad 'pagado' de tipo [Amount] a la clase [EstadoTDBO] para que esta prueba pase.
+     * Consejo:
+     * - Queremos que esta propiedad sea iniciada con monto cero en la creación de [EstadoTDBO].
+     * - Puedes usar [POUNDS] una extensión sobre [Int] para crear una cantidad de libras esterlina e.j. '10.POUNDS'.
+     * - Esta propiedad lleva el registro de cuanto del inicial de [EstadoTDBO.amount] ha sido pagado por el deudor.
+     * - Puedes iniciar una propiedad con un valor por defecto en Kotlin de la siguiente manera:
      *
-     *       data class(val number: Int = 10)
+     *       data class(val numero: Int = 10)
      *
-     * - We need to make sure that the [IOUState.paid] property is of the same currency type as the
-     *   [IOUState.amount] property. You can create an instance of the [Amount] class that takes a zero value and a token
-     *   representing the currency - which should be the same currency as the [IOUState.amount] property.
+     * - Necesitamos asegurarnos que la propiedad [EstadoTDBO.paid] sea de la misma moneda que la propiedad
+     *   [EstadoTDBO.amount]. Puedes crear una instancia de la clase [Amount] que toma como valor cero y un token
+     *   representando la moneda - que deberia ser la misma moneda que la propiedad [EstadoTDBO.amount].
      */
-//    @Test
-//    fun hasPaidFieldOfCorrectType() {
-//        // Does the paid field exist?
-//        IOUState::class.java.getDeclaredField("paid")
-//        // Is the paid field of the correct type?
-//        assertEquals(IOUState::class.java.getDeclaredField("paid").type, Amount::class.java)
-//    }
+    @Test
+    fun hasPaidFieldOfCorrectType() {
+        // Does the paid field exist?
+        EstadoTDBO::class.java.getDeclaredField("pagado")
+        // Is the paid field of the correct type?
+        assertEquals(EstadoTDBO::class.java.getDeclaredField("pagado").type, Amount::class.java)
+    }
 
     /**
      * Task 5.
-     * TODO: Include the lender within the [IOUState.participants] list
+     * TODO: Include the lender within the [EstadoTDBO.participants] list
      * Hint: [listOf] takes any number of parameters and will add them to the list
      */
 //    @Test
@@ -99,7 +94,7 @@ class IOUStateTests {
 
     /**
      * Task 6.
-     * TODO: Similar to the last task, include the borrower within the [IOUState.participants] list
+     * TODO: Similar to the last task, include the borrower within the [EstadoTDBO.participants] list
      */
 //    @Test
 //    fun borrowerIsParticipant() {
@@ -128,7 +123,7 @@ class IOUStateTests {
      * - The [LinearState.linearId] is designed to link all [LinearState]s (which represent the state of an
      * agreement at a specific point in time) together. All the [LinearState]s with the same [LinearState.linearId]
      * represent the complete life-cycle to date of an agreement, asset or shared fact.
-     * - Provide a default value for [linearId] for a new [IOUState]
+     * - Provide a default value for [linearId] for a new [EstadoTDBO]
      */
 //    @Test
 //    fun hasLinearIdFieldOfCorrectType() {
@@ -161,10 +156,10 @@ class IOUStateTests {
 
     /**
      * Task 10.
-     * TODO: Add a helper method called [pay] that can be called from an [IOUState] to settle an amount of the IOU.
+     * TODO: Add a helper method called [pay] that can be called from an [EstadoTDBO] to settle an amount of the IOU.
      * Hint:
-     * - You will need to increase the [IOUState.paid] property by the amount the borrower wishes to pay.
-     * - Add a new function called [pay] in [IOUState]. This function will need to return an [IOUState].
+     * - You will need to increase the [EstadoTDBO.paid] property by the amount the borrower wishes to pay.
+     * - Add a new function called [pay] in [EstadoTDBO]. This function will need to return an [EstadoTDBO].
      * - The existing state is immutable so a new state must be created from the existing state. Kotlin provides a [copy]
      * method which creates a new object with new values for specified fields.
      * - [copy] returns a copy of the object instance and the fields can be changed by specifying new values as
@@ -179,7 +174,7 @@ class IOUStateTests {
 
     /**
      * Task 11.
-     * TODO: Add a helper method called [withNewLender] that can be called from an [IOUState] to change the IOU's lender.
+     * TODO: Add a helper method called [withNewLender] that can be called from an [EstadoTDBO] to change the IOU's lender.
      */
 //    @Test
 //    fun checkWithNewLenderHelperMethod() {

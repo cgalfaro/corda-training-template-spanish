@@ -4,10 +4,10 @@ import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.transactions.LedgerTransaction
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 
 /**
- * This is where you'll add the contract code which defines how the [IOUState] behaves. Look at the unit tests in
+ * This is where you'll add the contract code which defines how the [EstadoTDBO] behaves. Look at the unit tests in
  * [IOUContractTests] for instructions on how to complete the [IOUContract] class.
  */
 class IOUContract : Contract {

@@ -14,7 +14,7 @@ import net.corda.core.flows.StartableByRPC
 import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 
 /**
  * This is the flow which handles transfers of existing IOUs on the ledger.
@@ -45,7 +45,7 @@ class IOUTransferFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() 
         val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs.single().data
-                "This must be an IOU transaction" using (output is IOUState)
+                "This must be an IOU transaction" using (output is EstadoTDBO)
             }
         }
 

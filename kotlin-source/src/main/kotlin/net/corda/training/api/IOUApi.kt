@@ -16,7 +16,7 @@ import net.corda.finance.workflows.getCashBalances
 import net.corda.training.flow.IOUSettleFlow
 import net.corda.training.flow.IOUTransferFlow
 import net.corda.training.flow.SelfIssueCashFlow
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.slf4j.Logger
@@ -72,14 +72,14 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Task 1
      * Displays all IOU states that exist in the node's vault.
      * TODO: Return a list of IOUStates on ledger
-     * Hint - Use [rpcOps] to query the vault all unconsumed [IOUState]s
+     * Hint - Use [rpcOps] to query the vault all unconsumed [EstadoTDBO]s
      */
     @GET
     @Path("ious")
     @Produces(MediaType.APPLICATION_JSON)
     fun getIOUs(): List<StateAndRef<ContractState>> {
         // Filter by state type: IOU.
-        return rpcOps.vaultQueryBy<IOUState>().states
+        return rpcOps.vaultQueryBy<EstadoTDBO>().states
     }
 
     /**

@@ -3,24 +3,18 @@ package net.corda.training.flow
 import net.corda.core.contracts.*
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.transactions.SignedTransaction
-import net.corda.finance.*
 import net.corda.finance.contracts.asset.Cash
 import net.corda.testing.node.MockNetwork
-import net.corda.training.contract.IOUContract
-import net.corda.training.state.IOUState
+import net.corda.training.state.EstadoTDBO
 import net.corda.core.identity.Party
 import net.corda.core.internal.packageName
 import net.corda.core.utilities.getOrThrow
-import net.corda.finance.contracts.utils.sumCash
 import net.corda.finance.schemas.CashSchemaV1
-import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetworkNotarySpec
 import net.corda.testing.node.MockNodeParameters
 import net.corda.testing.node.StartedMockNode
 import org.junit.*
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 /**
  * Practical exercise instructions Flows part 3.
@@ -54,7 +48,7 @@ class IOUSettleFlowTests {
     /**
      * Issue an IOU on the ledger, we need to do this before we can transfer one.
      */
-    private fun issueIou(iou: IOUState): SignedTransaction {
+    private fun issueIou(iou: EstadoTDBO): SignedTransaction {
         val flow = IOUIssueFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
@@ -73,16 +67,16 @@ class IOUSettleFlowTests {
 
     /**
      * Task 1.
-     * The first task is to grab the [IOUState] for the given [linearId] from the vault, assemble a transaction
+     * The first task is to grab the [EstadoTDBO] for the given [linearId] from the vault, assemble a transaction
      * and sign it.
      * TODO: Grab the IOU for the given [linearId] from the vault, build and sign the settle transaction.
      * Hints:
-     * - Use the code from the [IOUTransferFlow] to get the correct [IOUState] from the vault.
+     * - Use the code from the [IOUTransferFlow] to get the correct [EstadoTDBO] from the vault.
      * - You will need to use the [Cash.generateSpend] functionality of the vault to add the cash states and cash command
      *   to your transaction. The API is quite simple. It takes a reference to a [TransactionBuilder], an [Amount] and
      *   the [Party] object for the recipient. The function will mutate your builder by adding the states and commands.
-     * - You then need to produce the output [IOUState] by using the [IOUState.pay] function.
-     * - Add the input [IOUState] [StateAndRef] and the new output [IOUState] to the transaction.
+     * - You then need to produce the output [EstadoTDBO] by using the [EstadoTDBO.pay] function.
+     * - Add the input [EstadoTDBO] [StateAndRef] and the new output [EstadoTDBO] to the transaction.
      * - Sign the transaction and return it.
      */
 //    @Test

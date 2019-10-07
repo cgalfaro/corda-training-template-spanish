@@ -7,24 +7,17 @@ import net.corda.core.contracts.withoutIssuer
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.internal.packageName
-import net.corda.finance.DOLLARS
-import net.corda.finance.POUNDS
 import net.corda.finance.`issued by`
 import net.corda.finance.contracts.asset.Cash
 import net.corda.finance.schemas.CashSchemaV1
 import net.corda.testing.core.TestIdentity
 import net.corda.testing.node.MockServices
-import net.corda.testing.node.ledger
-import net.corda.training.ALICE
-import net.corda.training.BOB
-import net.corda.training.CHARLIE
-import net.corda.training.state.IOUState
-import org.junit.Test
+import net.corda.training.state.EstadoTDBO
 import java.util.*
 
 /**
  * Practical exercise instructions for Contracts Part 3.
- * The objective here is to write some contract code that verifies a transaction to settle an [IOUState].
+ * The objective here is to write some contract code that verifies a transaction to settle an [EstadoTDBO].
  * Settling is more complicated than transfering and issuing as it requires you to use multiple state types in a
  * transaction.
  * As with the [IOUIssueTests] and [IOUTransferTests] uncomment each unit test and run them one at a time. Use the body
@@ -171,7 +164,7 @@ class IOUSettleTests {
      * Task 4.
      * Now we need to ensure that there are cash states present in the outputs list. The [IOUContract] doesn't care
      * about input cash as the validity of the cash transaction will be checked by the [Cash] contract. We do however
-     * need to count how much cash is being used to settle and update our [IOUState] accordingly.
+     * need to count how much cash is being used to settle and update our [EstadoTDBO] accordingly.
      * TODO: Filter out the cash states from the list of outputs list and assign them to a constant.
      * Hint:
      * - Use the [outputsOfType] extension function to filter the transaction's outputs by type, in this case [Cash.State].
@@ -372,7 +365,7 @@ class IOUSettleTests {
     /**
      * Task 9.
      * We want to make sure that the only property of the IOU which changes when we settle, is the paid amount.
-     * TODO: Write a constraint to check only the paid property of the [IOUState] changes when settling.
+     * TODO: Write a constraint to check only the paid property of the [EstadoTDBO] changes when settling.
      */
 //    @Test
 //    fun onlyPaidPropertyMayChange() {

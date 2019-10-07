@@ -54,7 +54,7 @@ more challenging exercises specified in Transfer and Settle testing files.
 ### Kotlin
 State:
 
-* Template: `kotlin-source/src/test/kotlin/net/corda/training/state/IOUState.kt`
+* Template: `kotlin-source/src/test/kotlin/net/corda/training/state/EstadoTDBO.kt`
 * Tests: `kotlin-source/src/main/kotlin/net/corda/training/state/IOUStateTests.kt`
 
 Contract:
