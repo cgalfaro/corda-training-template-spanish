@@ -1,10 +1,8 @@
 package net.corda.training.state
 
-import net.corda.core.contracts.Amount
-import net.corda.core.contracts.BelongsToContract
-import net.corda.core.contracts.ContractState
+import net.corda.core.contracts.*
 import net.corda.core.identity.Party
-import net.corda.training.contract.IOUContract
+import net.corda.training.contract.ContratoTDBO
 import java.util.*
 
 /**
@@ -13,10 +11,14 @@ import java.util.*
  *
  * Elimina la propiedad "val data: String = "data" antes de comenzar las tareas de [EstadoTDBO].
  */
-@BelongsToContract(IOUContract::class)
+@BelongsToContract(ContratoTDBO::class)
 data class EstadoTDBO(val cantidad: Amount<Currency>,
                       val prestamista: Party,
                       val deudor: Party,
-                      val pagado: Amount<Currency> = Amount(0, cantidad.token)): ContractState {
-    override val participants: List<Party> get() = listOf()
+                      val pagado: Amount<Currency> = Amount(0, cantidad.token),
+                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
+    override val participants: List<Party> get() = listOf(prestamista, deudor)
+
+    fun pagar(cantidadParaLiquidar: Amount<Currency>) = copy(pagado = pagado.plus(cantidadParaLiquidar))
+    fun conNuevoPrestamista(nuevoPrestamista: Party) = copy(prestamista = nuevoPrestamista)
 }

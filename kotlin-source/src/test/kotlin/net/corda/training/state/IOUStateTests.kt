@@ -3,9 +3,14 @@ package net.corda.training.state
 import net.corda.core.contracts.*
 import net.corda.core.identity.Party
 import net.corda.finance.*
+import net.corda.training.ALICE
+import net.corda.training.BOB
+import net.corda.training.MEGACORP
+import net.corda.training.MINICORP
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 /**
  * Instrucciones de ejercicio práctico.
@@ -82,104 +87,104 @@ class IOUStateTests {
     }
 
     /**
-     * Task 5.
-     * TODO: Include the lender within the [EstadoTDBO.participants] list
-     * Hint: [listOf] takes any number of parameters and will add them to the list
+     * Tarea 5.
+     * TODO: Incluya al prestamista en la lista [EstadoTDBO.participants]
+     * Consejo: [listOf] toma cualquier numero de parametros y los agrega a la lista
      */
-//    @Test
-//    fun lenderIsParticipant() {
-//        val iouState = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        assertNotEquals(iouState.participants.indexOf(ALICE.party), -1)
-//    }
+    @Test
+    fun lenderIsParticipant() {
+        val estadoTdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        assertNotEquals(estadoTdbo.participants.indexOf(ALICE.party), -1)
+    }
 
     /**
-     * Task 6.
-     * TODO: Similar to the last task, include the borrower within the [EstadoTDBO.participants] list
+     * Tarea 6.
+     * TODO: Similar a la tarea anterior, incluya al deudor en la lista [EstadoTDBO.participants]
      */
-//    @Test
-//    fun borrowerIsParticipant() {
-//        val iouState = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        assertNotEquals(iouState.participants.indexOf(BOB.party), -1)
-//    }
+    @Test
+    fun borrowerIsParticipant() {
+        val estadoTdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        assertNotEquals(estadoTdbo.participants.indexOf(BOB.party), -1)
+    }
 
     /**
-     * Task 7.
-     * TODO: Implement [LinearState] along with the required properties and methods.
-     * Hint: [LinearState] implements [ContractState] which defines an additional property and method. You can use
-     * IntellIJ to automatically add the member definitions for you or you can add them yourself. Look at the definition
-     * of [LinearState] for what requires adding.
+     * Tarea 7.
+     * TODO: Implementar [LinearState] junto con las propiedades y metodos requeridos.
+     * Consejo: [LinearState] implementa [ContractState] que define una propiedad y metodo adicional. Puedes usar
+     * IntellIJ para que agrefue las definiciones o puedes agregarlas tu mismo. Mira la definicion
+     * de [LinearState] para ver que es requerido añadir.
      */
-//    @Test
-//    fun isLinearState() {
-//        assert(LinearState::class.java.isAssignableFrom(IOUState::class.java))
-//    }
+    @Test
+    fun isLinearState() {
+        assert(LinearState::class.java.isAssignableFrom(EstadoTDBO::class.java))
+    }
 
     /**
-     * Task 8.
-     * TODO: Override the [LinearState.linearId] property and assign it a value via your state's constructor.
-     * Hint:
-     * - The [LinearState.linearId] property is of type [UniqueIdentifier]. You need to create a new instance of
-     * the [UniqueIdentifier] class.
-     * - The [LinearState.linearId] is designed to link all [LinearState]s (which represent the state of an
-     * agreement at a specific point in time) together. All the [LinearState]s with the same [LinearState.linearId]
-     * represent the complete life-cycle to date of an agreement, asset or shared fact.
-     * - Provide a default value for [linearId] for a new [EstadoTDBO]
+     * Tarea 8.
+     * TODO: Override la propiedad [LinearState.linearId] y asignarle un valor por medio del constructor.
+     * Consejo:
+     * - La propiedad [LinearState.linearId] es de tipo [UniqueIdentifier]. Necesitas crear una nueva instancia de
+     * la clase [UniqueIdentifier].
+     * - El [LinearState.linearId] está diseñado para enlazar todos los [LinearState]s (que representan un estado de un
+     * acuerdo un punto de tiempo especifico) juntos. Todos los [LinearState]s con el mismo [LinearState.linearId]
+     * representan el ciclo de vida completo de un acuerdo, un valor o un hecho compartido.
+     * - Provee un valor por defecto para el [linearId] para un nuevo [EstadoTDBO]
      */
-//    @Test
-//    fun hasLinearIdFieldOfCorrectType() {
-//        // Does the linearId field exist?
-//        IOUState::class.java.getDeclaredField("linearId")
-//        // Is the linearId field of the correct type?
-//        assertEquals(IOUState::class.java.getDeclaredField("linearId").type, UniqueIdentifier::class.java)
-//    }
+    @Test
+    fun hasLinearIdFieldOfCorrectType() {
+        // Does the linearId field exist?
+        EstadoTDBO::class.java.getDeclaredField("linearId")
+        // Is the linearId field of the correct type?
+        assertEquals(EstadoTDBO::class.java.getDeclaredField("linearId").type, UniqueIdentifier::class.java)
+    }
 
     /**
-     * Task 9.
-     * TODO: Ensure parameters are ordered correctly.
-     * Hint: Make sure that the lender and borrower fields are not in the wrong order as this may cause some
-     * confusion in subsequent tasks!
+     * Tarea 9.
+     * TODO: Asegurarse que los parámetros han sido ordenados correctamente.
+     * Consejo: Asegúrate que el deudor y el prestamista no estén en el orden equivocado ya que esto puede causar
+     * confusión en las tareas mas adelante!
      */
-//    @Test
-//    fun checkIOUStateParameterOrdering() {
-//        val fields = IOUState::class.java.declaredFields
-//        val amountIdx = fields.indexOf(IOUState::class.java.getDeclaredField("amount"))
-//        val lenderIdx = fields.indexOf(IOUState::class.java.getDeclaredField("lender"))
-//        val borrowerIdx = fields.indexOf(IOUState::class.java.getDeclaredField("borrower"))
-//        val paidIdx = fields.indexOf(IOUState::class.java.getDeclaredField("paid"))
-//        val linearIdIdx = fields.indexOf(IOUState::class.java.getDeclaredField("linearId"))
-//
-//        assert(amountIdx < lenderIdx)
-//        assert(lenderIdx < borrowerIdx)
-//        assert(borrowerIdx < paidIdx)
-//        assert(paidIdx < linearIdIdx)
-//    }
+    @Test
+    fun checkIOUStateParameterOrdering() {
+        val fields = EstadoTDBO::class.java.declaredFields
+        val amountIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("cantidad"))
+        val lenderIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("prestamista"))
+        val borrowerIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("deudor"))
+        val paidIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("pagado"))
+        val linearIdIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("linearId"))
+
+        assert(amountIdx < lenderIdx)
+        assert(lenderIdx < borrowerIdx)
+        assert(borrowerIdx < paidIdx)
+        assert(paidIdx < linearIdIdx)
+    }
 
     /**
-     * Task 10.
-     * TODO: Add a helper method called [pay] that can be called from an [EstadoTDBO] to settle an amount of the IOU.
-     * Hint:
-     * - You will need to increase the [EstadoTDBO.paid] property by the amount the borrower wishes to pay.
-     * - Add a new function called [pay] in [EstadoTDBO]. This function will need to return an [EstadoTDBO].
-     * - The existing state is immutable so a new state must be created from the existing state. Kotlin provides a [copy]
-     * method which creates a new object with new values for specified fields.
-     * - [copy] returns a copy of the object instance and the fields can be changed by specifying new values as
-     * parameters to [copy]     */
-//    @Test
-//    fun checkPayHelperMethod() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        assertEquals(5.DOLLARS, iou.pay(5.DOLLARS).paid)
-//        assertEquals(3.DOLLARS, iou.pay(1.DOLLARS).pay(2.DOLLARS).paid)
-//        assertEquals(10.DOLLARS, iou.pay(5.DOLLARS).pay(3.DOLLARS).pay(2.DOLLARS).paid)
-//    }
+     * Tarea 10.
+     * TODO: agregar un metodo para ayuda llamado [pagar] que pueda ser llamado desde [EstadoTDBO] para liquidar una cantidad del TDBO.
+     * Consejo:
+     * - Necesitarás incrementar la propiedad [EstadoTDBO.pagado] por la cantidad que el deudor quiera pagar.
+     * - Agrega una función llamada [pagar] en [EstadoTDBO]. Esta funcion debe devolver un [EstadoTDBO].
+     * - El estado existente es inmutable así que un nuevo estado debe ser creado. Kotlin provee un metodo [copy]
+     * el cual crea un nuevo objeto con los nuevos valores para los campos especificados.
+     * - [copy] devuelve una copia de la instancia del objeto y los campos pueden ser cambiados escpecificando los nuevos valores
+     * como parametros de [copy]     */
+    @Test
+    fun checkPayHelperMethod() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        assertEquals(5.DOLLARS, tdbo.pagar(5.DOLLARS).pagado)
+        assertEquals(3.DOLLARS, tdbo.pagar(1.DOLLARS).pagar(2.DOLLARS).pagado)
+        assertEquals(10.DOLLARS, tdbo.pagar(5.DOLLARS).pagar(3.DOLLARS).pagar(2.DOLLARS).pagado)
+    }
 
     /**
-     * Task 11.
-     * TODO: Add a helper method called [withNewLender] that can be called from an [EstadoTDBO] to change the IOU's lender.
+     * Tarea 11.
+     * TODO: Agregar metodo de ayuda [conNuevoPrestamista] que pueda ser llamado desde [EstadoTDBO] para cambiar el prestamista del TDBO.
      */
-//    @Test
-//    fun checkWithNewLenderHelperMethod() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        assertEquals(MINICORP.party, iou.withNewLender(MINICORP.party).lender)
-//        assertEquals(MEGACORP.party, iou.withNewLender(MEGACORP.party).lender)
-//    }
+    @Test
+    fun checkWithNewLenderHelperMethod() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        assertEquals(MINICORP.party, tdbo.conNuevoPrestamista(MINICORP.party).prestamista)
+        assertEquals(MEGACORP.party, tdbo.conNuevoPrestamista(MEGACORP.party).prestamista)
+    }
 }

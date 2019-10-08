@@ -16,12 +16,12 @@ import net.corda.training.state.EstadoTDBO
 import java.util.*
 
 /**
- * Practical exercise instructions for Contracts Part 3.
- * The objective here is to write some contract code that verifies a transaction to settle an [EstadoTDBO].
- * Settling is more complicated than transfering and issuing as it requires you to use multiple state types in a
- * transaction.
- * As with the [IOUIssueTests] and [IOUTransferTests] uncomment each unit test and run them one at a time. Use the body
- * of the tests and the task description to determine how to get the tests to pass.
+ * Instrucciones para ejercicios prácticos de contrato Parte 3.
+ * El objetivo es escribir código de contrato que verifique una transacción de liquidar un [EstadoTDBO].
+ * Liquidar es un poco mas complejo que transferir y emitir ya que requiere el uso de multiples tipos de estado
+ * en una transacción.
+ * Como con los [IOUIssueTests] y [IOUTransferTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición
+ * de las pruebas y la descripción de cada tarea para determinar como pasar las pruebas.
  */
 class IOUSettleTests {
     private fun createCashState(amount: Amount<Currency>, owner: AbstractParty): Cash.State {
@@ -31,16 +31,16 @@ class IOUSettleTests {
                 owner = owner)
     }
 
-    // A pre-defined dummy command.
+    // Un comando pre-definido
     class DummyCommand : TypeOnlyCommandData()
 
     var ledgerServices = MockServices(listOf("net.corda.training", "net.corda.finance.contracts.asset", CashSchemaV1::class.packageName))
 
     /**
-     * Task 1.
-     * We need to add another case to deal with settling in the [IOUContract.verify] function.
-     * TODO: Add the [IOUContract.Commands.Settle] case to the verify function.
-     * Hint: You can leave the body empty for now.
+     * Tarea 1.
+     * Necesitamos agregar otro caso en nuestro "when" para manejar la liquidación con la función [ContratoTDBO.verify].
+     * TODO: Agregar el caso [ContratoTDBO.Commands.Settle] a la función verify.
+     * Consejo: Por el momento puedes dejar el cuerpo vacio.
      */
 //    @Test
 //    fun mustIncludeSettleCommand() {
@@ -162,7 +162,7 @@ class IOUSettleTests {
 
     /**
      * Task 4.
-     * Now we need to ensure that there are cash states present in the outputs list. The [IOUContract] doesn't care
+     * Now we need to ensure that there are cash states present in the outputs list. The [ContratoTDBO] doesn't care
      * about input cash as the validity of the cash transaction will be checked by the [Cash] contract. We do however
      * need to count how much cash is being used to settle and update our [EstadoTDBO] accordingly.
      * TODO: Filter out the cash states from the list of outputs list and assign them to a constant.

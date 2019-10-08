@@ -5,7 +5,7 @@ import net.corda.core.flows.FlowLogic
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.transactions.SignedTransaction
 import net.corda.testing.node.*
-import net.corda.training.contract.IOUContract
+import net.corda.training.contract.ContratoTDBO
 import net.corda.training.state.EstadoTDBO
 import org.junit.*
 
@@ -48,7 +48,7 @@ class IOUIssueFlowTests {
      * - Create a [TransactionBuilder] and pass it a notary reference.
      * -- A notary [Party] object can be obtained from [FlowLogic.serviceHub.networkMapCache].
      * -- In this training project there is only one notary
-     * - Create an [IOUContract.Commands.Issue] inside a new [Command].
+     * - Create an [ContratoTDBO.Commands.Issue] inside a new [Command].
      * -- The required signers will be the same as the state's participants
      * -- Add the [Command] to the transaction builder [addCommand].
      * - Use the flow's [EstadoTDBO] parameter as the output state with [addOutputState]
@@ -81,7 +81,7 @@ class IOUIssueFlowTests {
 
     /**
      * Task 2.
-     * Now we have a well formed transaction, we need to properly verify it using the [IOUContract].
+     * Now we have a well formed transaction, we need to properly verify it using the [ContratoTDBO].
      * TODO: Amend the [IOUIssueFlow] to verify the transaction as well as sign it.
      * Hint: You can verify on the builder directly prior to finalizing the transaction. This way
      * you can confirm the transaction prior to making it immutable with the signature.

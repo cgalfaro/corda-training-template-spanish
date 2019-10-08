@@ -7,233 +7,241 @@ import net.corda.core.contracts.TypeOnlyCommandData
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.identity.AbstractParty
 import net.corda.core.internal.packageName
+import net.corda.finance.DOLLARS
+import net.corda.finance.POUNDS
 import net.corda.finance.schemas.CashSchemaV1
 import net.corda.testing.node.MockServices
+import net.corda.testing.node.ledger
+import net.corda.training.ALICE
+import net.corda.training.BOB
+import net.corda.training.CHARLIE
+import net.corda.training.MINICORP
 import net.corda.training.state.EstadoTDBO
+import org.junit.Test
 
 /**
- * Practical exercise instructions for Contracts Part 2.
- * The objective here is to write some contract code that verifies a transaction to issue an [EstadoTDBO].
- * As with the [IOUIssueTests] uncomment each unit test and run them one at a time. Use the body of the tests and the
- * task description to determine how to get the tests to pass.
+ * Instrucciones para ejercicio práctico de Contratos parte 2.
+ * El objetivo es escribir codigo de contrato que verifique una transacción para transferir un [EstadoTDBO].
+ * Como con las puebas de [IOUIssueTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición de las pruebas y
+ * la descripción de cada tarea para determinar como pasar las pruebas.
  */
 class IOUTransferTests {
-    // A pre-made dummy state we may need for some of the tests.
+    // Un estado de prueba pre-hecho que podemos necesitar en algunas pruebas.
     class DummyState : ContractState {
         override val participants: List<AbstractParty> get() = listOf()
     }
-    // A dummy command.
+    // Un comando de prueba.
     class DummyCommand : CommandData
     var ledgerServices = MockServices(listOf("net.corda.training", "net.corda.finance.contracts.asset", CashSchemaV1::class.packageName))
 
     /**
-     * Task 1.
-     * Now things are going to get interesting!
-     * We need the [IOUContract] to not only handle Issues of IOUs but now also Transfers.
-     * Of course, we'll need to add a new Command and add some additional contract code to handle Transfers.
-     * TODO: Add a "Transfer" command to the IOUState and update the verify() function to handle multiple commands.
-     * Hint:
-     * - As with the [Issue] command, add the [Transfer] command within the [IOUContract.Commands].
-     * - Again, we only care about the existence of the [Transfer] command in a transaction, therefore it should
-     *   subclass the [TypeOnlyCommandData].
-     * - You can use the [requireSingleCommand] function to check for the existence of a command which implements a
-     *   specified interface. Instead of using
+     * Tarea 1.
+     * ¡Ahora las cosas se pondrán interesantes!
+     * Necesitamos que el [ContratoTDBO] no pueda solo emitir TDBOs si no que tambien transferirlos.
+     * pues claro, necesitaremos agregar un nuevo comando y un poco de codido de contrato adicional para manejar transferencias.
+     * TODO: Agrega el comando "Transferir" al EstadoTDBO (ContratoTDBO) y actualiza la función verify() para que maneje multiples comandos.
+     * Consejos:
+     * - Como con el comando [Emitir], agrega el comando [Transferir] dentro de [ContratoTDBO.Commands].
+     * - Una vez mas, solo nos interesa la existencia del comando [Transferir] en una transacción, por lo tanto debe
+     *   subclassear [TypeOnlyCommandData].
+     * - Puedes utilizar la función [requireSingleCommand] para verificar la ecistencia de un comando que implementa una
+     *   interfaz específica. En lugar de usar:
      *
-     *       tx.commands.requireSingleCommand<Commands.Issue>()
+     *       tx.commands.requireSingleCommand<Commands.Emitir>()
      *
-     *   You can instead use:
+     *   Podemos utilizar:
      *
      *       tx.commands.requireSingleCommand<Commands>()
      *
-     *   To match any command that implements [IOUContract.Commands]
-     * - We then need to switch on the type of [Command.value], in Kotlin you can do this using a "when" block
-     * - For each "when" block case, you can check the type of [Command.value] using the "is" keyword:
+     *   Para constatar cualquier comando que implemente [ContratoTDBO.Commands]
+     * - Ahora debemos conocer el tipo de [Command.value], en Kotlin lo puedes hacer utilizando un bloque "when"
+     * - Para cada caso en el bloque "when", puedes verificar el tipo de [Command.value] usando la palabra "is":
      *
      *       val command = ...
      *       when (command.value) {
-     *           is Commands.X -> doSomething()
-     *           is Commands.Y -> doSomethingElse()
+     *           is Commands.X -> hagaAlgo()
+     *           is Commands.Y -> hagaAlgoMas()
      *       }
-     * - The [requireSingleCommand] function will handle unrecognised types for you (see first unit test).
+     * - La funcion [requireSingleCommand] manejará los tipos de comandos desconocidos. (mira la primera prueba).
      */
-//    @Test
-//    fun mustHandleMultipleCommandValues() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                output(IOUContract::class.java.name, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand())
-//                this `fails with` "Required net.corda.training.contract.IOUContract.Commands command"
-//            }
-//            transaction {
-//                output(IOUContract::class.java.name, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                this.verifies()
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustHandleMultipleCommandValues() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                output(ContratoTDBO::class.java.name, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand())
+                this `fails with` "Required net.corda.training.contract.ContratoTDBO.Commands command"
+            }
+            transaction {
+                output(ContratoTDBO::class.java.name, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                this.verifies()
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 2.
-     * The transfer transaction should only have one input state and one output state.
-     * TODO: Add constraints to the contract code to ensure a transfer transaction has only one input and output state.
-     * Hint:
-     * - Look at the contract code for "Issue".
+     * Tarea 2.
+     * La transacción de transferir debe contener únicamente un estado de salida y uno de entrada.
+     * TODO: Agrega restricciones al codigo de contrato para asegurar que la transacción solo tiene un estado de entrada y uno de salida
+     * Consejo:
+     * - Mira el codigo de contrato para "Emitir".
      */
-//    @Test
-//    fun mustHaveOneInputAndOneOutput() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                input(IOUContract::class.java.name, DummyState())
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "An IOU transfer transaction should only consume one input state."
-//            }
-//            transaction {
-//                output(IOUContract::class.java.name, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "An IOU transfer transaction should only consume one input state."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "An IOU transfer transaction should only create one output state."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                output(IOUContract::class.java.name, DummyState())
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "An IOU transfer transaction should only create one output state."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustHaveOneInputAndOneOutput() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                input(ContratoTDBO::class.java.name, DummyState())
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Una transferencia de TDBO solo debe consumir un estado de entrada."
+            }
+            transaction {
+                output(ContratoTDBO::class.java.name, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Una transferencia de TDBO solo debe consumir un estado de entrada."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Solo un estado de salida debe ser creado al transferir un TDBO."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                output(ContratoTDBO::class.java.name, DummyState())
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Solo un estado de salida debe ser creado al transferir un TDBO."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 3.
-     * TODO: Add a constraint to the contract code to ensure only the lender property can change when transferring IOUs.
-     * Hint:
-     * - You can use the [EstadoTDBO.copy] method.
-     * - You can compare a copy of the input to the output with the lender of the output as the lender of the input.
-     * - You'll need references to the input and output ious.
-     * - Remember you need to cast the [ContractState]s to [EstadoTDBO]s.
-     * - It's easier to take this approach then check all properties other than the lender haven't changed, including
-     *   the [linearId] and the [contract]!
+     * Tarea 3.
+     * TODO: Agrega una restricción al código de contrato para asegurar que solo la propiedad prestamista pueda cambiar al transferir TDBOs.
+     * Consejo:
+     * - Puedes utilizar el metodo [EstadoTDBO.copy].
+     * - Puedes comparar la copia de una entrada con la salida con el prestamista de la salida como el prestamista de la entrada
+     * - Necesitarás referencias a la entrada y salida de TDBOs
+     * - Recuerda que debes envolver con [ContractState]s a los [EstadoTDBO]s.
+     * - ¡Es mas facil tomar este acercamiento en vez de comprobar que todas las otras propiedades que no sean el prestamista
+     *   no hayan cambiado, incluyendo el [linearId] y el [contracto]!
      */
-//    @Test
-//    fun onlyTheLenderMayChange() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract::class.java.name, IOUState(10.DOLLARS, ALICE.party, BOB.party))
-//                output(IOUContract::class.java.name, IOUState(1.DOLLARS, ALICE.party, BOB.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "Only the lender property may change."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, IOUState(10.DOLLARS, ALICE.party, BOB.party))
-//                output(IOUContract::class.java.name, IOUState(10.DOLLARS, ALICE.party, CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "Only the lender property may change."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, IOUState(10.DOLLARS, ALICE.party, BOB.party, 5.DOLLARS))
-//                output(IOUContract::class.java.name, IOUState(10.DOLLARS, ALICE.party, BOB.party, 10.DOLLARS))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "Only the lender property may change."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun onlyTheLenderMayChange() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO::class.java.name, EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party))
+                output(ContratoTDBO::class.java.name, EstadoTDBO(1.DOLLARS, ALICE.party, BOB.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Solo la propiedad prestamista puede cambiar."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party))
+                output(ContratoTDBO::class.java.name, EstadoTDBO(10.DOLLARS, ALICE.party, CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Solo la propiedad prestamista puede cambiar."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party, 5.DOLLARS))
+                output(ContratoTDBO::class.java.name, EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party, 10.DOLLARS))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "Solo la propiedad prestamista puede cambiar."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 4.
-     * It is fairly obvious that in a transfer IOU transaction the lender must change.
-     * TODO: Add a constraint to check the lender has changed in the output IOU.
+     * Tarea 4.
+     * Es bastante obvio que en una transferencia el prestamista debe cambiar.
+     * TODO: Agregar una restriccion para comprobar que el prestamista haya cambiado en el TDBO de salida.
      */
-//    @Test
-//    fun theLenderMustChange() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The lender property must change in a transfer."
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun theLenderMustChange() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "La propiedad prestamista debe de cambiar en una transferencia."
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 5.
-     * All the participants in a transfer IOU transaction must sign.
-     * TODO: Add a constraint to check the old lender, the new lender and the recipient have signed.
+     * Tarea 5.
+     * Todos los participantes de una transferencia de TDBO deben firmar.
+     * TODO: Agrega una restricción para revisar que el prestamista anterior, el nuevo prestamista y el deudor hayan firmado.
      */
-//    @Test
-//    fun allParticipantsMustSign() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The borrower, old lender and new lender only must sign an IOU transfer transaction"
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The borrower, old lender and new lender only must sign an IOU transfer transaction"
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The borrower, old lender and new lender only must sign an IOU transfer transaction"
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, MINICORP.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The borrower, old lender and new lender only must sign an IOU transfer transaction"
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey, MINICORP.publicKey), IOUContract.Commands.Transfer())
-//                this `fails with` "The borrower, old lender and new lender only must sign an IOU transfer transaction"
-//            }
-//            transaction {
-//                input(IOUContract::class.java.name, iou)
-//                output(IOUContract::class.java.name, iou.withNewLender(CHARLIE.party))
-//                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), IOUContract.Commands.Transfer())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun allParticipantsMustSign() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO"
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO"
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO"
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, MINICORP.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO"
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey, MINICORP.publicKey), ContratoTDBO.Commands.Transferir())
+                this `fails with` "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO"
+            }
+            transaction {
+                input(ContratoTDBO::class.java.name, tdbo)
+                output(ContratoTDBO::class.java.name, tdbo.conNuevoPrestamista(CHARLIE.party))
+                command(listOf(ALICE.publicKey, BOB.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Transferir())
+                this.verifies()
+            }
+        }
+    }
 }

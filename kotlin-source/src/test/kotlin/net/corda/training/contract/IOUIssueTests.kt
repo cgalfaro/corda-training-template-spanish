@@ -1,14 +1,22 @@
 package net.corda.training.contract
 
 import net.corda.core.contracts.*
+import net.corda.finance.*
+import net.corda.testing.contracts.DummyState
 import net.corda.testing.node.MockServices
+import net.corda.testing.node.ledger
+import net.corda.training.ALICE
+import net.corda.training.BOB
+import net.corda.training.DUMMY
+import net.corda.training.MINICORP
 import net.corda.training.state.EstadoTDBO
+import org.junit.*
 
 /**
- * Practical exercise instructions for Contracts Part 1.
- * The objective here is to write some contract code that verifies a transaction to issue an [EstadoTDBO].
- * As with the [IOUStateTests] uncomment each unit test and run them one at a time. Use the body of the tests and the
- * task description to determine how to get the tests to pass.
+ * Instrucciones para ejercicio práctico de contratos Parte 1.
+ * El objetivo es escribir codigo de contrato que verifique una transacción para emitir un [EstadoTDBO].
+ * Como con [IOUStateTests] descomenta cada unit test y ejecutalo uno a la vez. Utiliza la definición de las pruebas y
+ * la descripción de cada tarea para determinar como pasar las pruebas.
  */
 class IOUIssueTests {
     // A pre-defined dummy command.
@@ -16,239 +24,238 @@ class IOUIssueTests {
     private var ledgerServices = MockServices(listOf("net.corda.training"))
 
     /**
-     * Task 1.
-     * Recall that Commands are required to hint to the intention of the transaction as well as take a list of
-     * public keys as parameters which correspond to the required signers for the transaction.
-     * Commands also become more important later on when multiple actions are possible with an IOUState, e.g. Transfer
-     * and Settle.
-     * TODO: Add an "Issue" command to the IOUContract and check for the existence of the command in the verify function.
-     * Hint:
-     * - For the create command we only care about the existence of it in a transaction, therefore it should subclass
-     *   the [TypeOnlyCommandData] class.
-     * - The command should be defined inside [IOUContract].
-     * - You can use the [requireSingleCommand] function on [tx.commands] to check for the existence and type of the specified command
-     *   in the transaction. [requireSingleCommand] requires a generic type to identify the type of command required.
+     * Tarea 1.
+     * Recuerda que os comandos son requeridos para mostrar la intención de la transacción y la lista de
+     * llaves publicas como parámetros que corresponden a los firmantes necesarios para la transacción.
+     * Los comandos se vuelven más importantes mas tarde cuando multiples acciones son posibles con el EstadoTDBO,
+     * ej: Transferir y Liquidar.
+     * TODO: Agrega el comando "Emitir" al ContratoTDBO y chequea por la existencia del comando en la función verify
+     * Consejo:
+     * - Para el comando emitir únicamente nos importa la existencia de este mismo en una transacción, por ende debe ser subclase de
+     *   la clase [TypeOnlyCommandData].
+     * - El comando debe ser definido dentro de [ContratoTDBO].
+     * - Puedes utilizar la función [requireSingleCommand] en [tx.commands] para verificar la existencia y el tipo del comando especificado
+     *   en la transacción. [requireSingleCommand] requiere un tipo genérico para identificar el tipo de comando requerido.
      *
      *   requireSingleCommand<REQUIRED_COMMAND>()
      *
-     * - We usually encapsulate our commands around an interface inside the contract class called [Commands] which
-     *   implements the [CommandData] interface. The [IOUContract.Commands.Issue] command itself should be defined inside the [Commands]
-     *   interface as well as implement it, for example:
+     * - Generalment encapsulamos nuestros comandos alrededor de una interface andentro de la clase del contrato llamada [Commands] la cual
+     *   implementa la interfaz [CommandData]. El comando [ContratoTDBO.Commands.Issue] debería ser definido en la
+     *   interfaz [Commands] e implementarla, por ejemplo:
      *
      *     interface Commands : CommandData {
      *         class X : TypeOnlyCommandData(), Commands
      *     }
      *
-     * - We can check for the existence of any command that implements [IOUContract.Commands] by using the
-     *   [requireSingleCommand] function which takes a type parameter.
+     * - Podemos buscar la existencia de cualquier comando que implemente [ContratoTDBO.Commands] utilizando la
+     *   función [requireSingleCommand] que recibe un parámetro.
      */
-//    @Test
-//    fun mustIncludeIssueCommand() {
-//        val iou = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                output(IOUContract.IOU_CONTRACT_ID,  iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand()) // Wrong type.
-//                this.fails()
-//            }
-//            transaction {
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue()) // Correct type.
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustIncludeIssueCommand() {
+        val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                output(ContratoTDBO.TDBO_CONTRACT_ID,  tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand()) // Tipo incorrecto.
+                this.fails()
+            }
+            transaction {
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir()) // Tipo correcto.
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 2.
-     * As previously observed, issue transactions should not have any input state references. Therefore we must check to
-     * ensure that no input states are included in a transaction to issue an IOU.
-     * TODO: Write a contract constraint that ensures a transaction to issue an IOU does not include any input states.
-     * Hint: use a [requireThat] block with a constraint to inside the [IOUContract.verify] function to encapsulate your
-     * constraints:
+     * Tarea 2.
+     * Como lo vimos anteriorment, las restricciones de emitir no deben tener referencias a estados de entrada. Por lo tanto debemos
+     * asegurarnos que ningun estado de entrada sea incluido en la transacción para emitir un TDBO.
+     * TODO: Escriba una restricción para asegurar que una transacción para emitir un TDBO no incluya estados de entrada.
+     * Consejo: use un bloque [requireThat] con una restricción adentro de la función [ContratoTDBO.verify] para encapsular las
+     * restricciones:
      *
      *     requireThat {
-     *         "Message when constraint fails" using (boolean constraint expression)
+     *         "Mensaje cuando falla" using (expresión de restricción booleana)
      *     }
      *
-     * Note that the unit tests often expect contract verification failure with a specific message which should be
-     * defined with your contract constraints. If not then the unit test will fail!
+     * fíjese que las pruebas generalmente esperan que una verificación falle con un mensaje específico que debe
+     * ser definido en las restricciones del contrato. ¡Si no lo haces la prueba fallará!
      *
-     * You can access the list of inputs via the [LedgerTransaction] object which is passed into
-     * [IOUContract.verify].
+     * Puedes accesar la lista de entradas por medio del objeto [LedgerTransaction] que se pasa a
+     * [ContratoTDBO.verify].
      */
-//    @Test
-//    fun issueTransactionMustHaveNoInputs() {
-//        val iou = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, DummyState())
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "No inputs should be consumed when issuing an IOU."
-//            }
-//            transaction {
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                this.verifies() // As there are no input states.
-//            }
-//        }
-//    }
+    @Test
+    fun issueTransactionMustHaveNoInputs() {
+        val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, DummyState())
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "No se deben incluir entradas para la emision de un TDBO"
+            }
+            transaction {
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                this.verifies() // Ya que no hay estados de entrada.
+            }
+        }
+    }
 
     /**
-     * Task 3.
-     * Now we need to ensure that only one [EstadoTDBO] is issued per transaction.
-     * TODO: Write a contract constraint that ensures only one output state is created in a transaction.
-     * Hint: Write an additional constraint within the existing [requireThat] block which you created in the previous
-     * task.
+     * Tarea 3.
+     * Ahora necesitamos asegurar que solo un [EstadoTDBO] es emitido por transacción.
+     * TODO: Escriba una restriccion de contrato para asegurar que solo un estado de salida es creado en la transacción.
+     * Consejo: Escriba una restricción adicional dentro del bloque [requireThat] que creaste en la tarea anterior.
      */
-//    @Test
-//    fun issueTransactionMustHaveOneOutput() {
-//        val iou = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou) // Two outputs fails.
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Only one output state should be created when issuing an IOU."
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou) // One output passes.
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun issueTransactionMustHaveOneOutput() {
+        val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo) // Two outputs fails.
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "Solo un estado de salida debe ser creado al emitir un TDBO."
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo) // One output passes.
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 4.
-     * Now we need to consider the properties of the [EstadoTDBO]. We need to ensure that an IOU should always have a
-     * positive value.
-     * TODO: Write a contract constraint that ensures newly issued IOUs always have a positive value.
-     * Hint: You will need a number of hints to complete this task!
-     * - Use the Kotlin keyword 'val' to create a new constant which will hold a reference to the output IOU state.
-     * - You can use the Kotlin function [single] to either grab the single element from the list or throw an exception
-     *   if there are 0 or more than one elements in the list. Note that we have already checked the outputs list has
-     *   only one element in the previous task.
-     * - We need to obtain a reference to the proposed IOU for issuance from the [LedgerTransaction.outputs] list.
-     *   This list is typed as a list of [ContractState]s, therefore we need to cast the [ContractState] which we return
-     *   from [single] to an [EstadoTDBO]. You can use the Kotlin keyword 'as' to cast a class. E.g.
+     * Tarea 4.
+     * Ahora debemos considerar las propiedades del [EstadoTDBO]. Necesitamos asegurar que un TDBO siempre
+     * tiene un valor positivo.
+     * TODO: Esriba una restriccion de contrato para asegurar que los nuevos TDBO emitidos tengan valor positivo.
+     * Consejo: ¡Necesitarás varios consejos para completar esta tarea!
+     * - Use la palabra clave de kotlin 'val' para crear una nueva constante que almacenará la referencia al estado de salida TDBO.
+     * - Puedes usar la funcion de kotlin [single] para atrapar el unico elemento de la lista o tirar una excepción.
+     *   si existen 0 o más de un elemento en la lista. Fíjese que ya hemos comprobado en la tarea anterior que la lista de salida
+     *   tenga sólo un elemento.
+     * - Necesitamos obtener referencia del TDBO propuesto para emisión de la lista [LedgerTransaction.outputs].
+     *   Esta lista es de tipo [ContractState]s, por ende necesitamos castear el [ContractState] que recibimos
+     *   de [single] a un [EstadoTDBO]. Puedes utilizar la palabra clave de Kotlin 'as' para castear una clase. E.j.
      *
-     *       val state = tx.outputStates.single() as XState
+     *       val estado = tx.outputStates.single() as EstadoX
      *
-     * - When checking the [EstadoTDBO.amount] property is greater than zero, you need to check the
-     *   [EstadoTDBO.amount.quantity] field.
+     * - Cuando comprobamos la propiedad [EstadoTDBO.cantidad] es mayor a cero, necesitas comprobar el campo
+     *   [EstadoTDBO.amount.quantity].
      */
-//    @Test
-//    fun cannotCreateZeroValueIOUs() {
-//        ledgerServices.ledger {
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, IOUState(0.POUNDS, ALICE.party, BOB.party)) // Zero amount fails.
-//                this `fails with` "A newly issued IOU must have a positive amount."
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, IOUState(100.SWISS_FRANCS, ALICE.party, BOB.party))
-//                this.verifies()
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, IOUState(1.POUNDS, ALICE.party, BOB.party))
-//                this.verifies()
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, IOUState(10.DOLLARS, ALICE.party, BOB.party))
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun cannotCreateZeroValueIOUs() {
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, EstadoTDBO(0.POUNDS, ALICE.party, BOB.party)) // Zero amount fails.
+                this `fails with` "Un TDBO recién emitido debe contener una cantidad positiva"
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, EstadoTDBO(100.SWISS_FRANCS, ALICE.party, BOB.party))
+                this.verifies()
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, EstadoTDBO(1.POUNDS, ALICE.party, BOB.party))
+                this.verifies()
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party))
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 5.
-     * For obvious reasons, the identity of the lender and borrower must be different.
-     * TODO: Add a contract constraint to check the lender is not the borrower.
-     * Hint:
-     * - You can use the [EstadoTDBO.lender] and [EstadoTDBO.borrower] properties.
-     * - This check must be made before the checking who has signed.
+     * Tarea 5.
+     * Por razones obvias, la identidad del prestamista y el deudor deben ser diferentes.
+     * TODO: Agrega una restricción de contrato para revisar que el prestamista no sea el deudor.
+     * Consejo:
+     * - Puedes utilizar las propiedades [EstadoTDBO.lender] y [EstadoTDBO.borrower].
+     * - Esta comprobación se debe hacer antes de revisar quienes han firmado.
      */
-//    @Test
-//    fun lenderAndBorrowerCannotBeTheSame() {
-//        val iou = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        val borrowerIsLenderIou = IOUState(10.POUNDS, ALICE.party, ALICE.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey),IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, borrowerIsLenderIou)
-//                this `fails with` "The lender and borrower cannot have the same identity."
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun lenderAndBorrowerCannotBeTheSame() {
+        val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        val prestamistaEsDeudorTDBO = EstadoTDBO(10.POUNDS, ALICE.party, ALICE.party)
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey),ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, prestamistaEsDeudorTDBO)
+                this `fails with` "El prestamista y el deudor no pueden tener la misma identidad."
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 6.
-     * The list of public keys which the commands hold should contain all of the participants defined in the [EstadoTDBO].
-     * This is because the IOU is a bilateral agreement where both parties involved are required to sign to issue an
-     * IOU or change the properties of an existing IOU.
-     * TODO: Add a contract constraint to check that all the required signers are [EstadoTDBO] participants.
-     * Hint:
-     * - In Kotlin you can perform a set equality check of two sets with the == operator.
-     * - We need to check that the signers for the transaction are a subset of the participants list.
-     * - We don't want any additional public keys not listed in the IOUs participants list.
-     * - You will need a reference to the Issue command to get access to the list of signers.
-     * - [requireSingleCommand] returns the single required command - you can assign the return value to a constant.
+     * Tarea 6.
+     * La lista de las llaves publicas que los comandos almacenan deben contener a todos los participantes definidos en [EstadoTDBO].
+     * Esto es por que el TDBO es un acuerdo bilateral donde ambos participantes involucrados deben firmar para emitir un
+     * TDBO nuevo o cambiar las propiedades de un TDBO existente.
+     * TODO: Agrega una restricción de contrato para comprobar que todos los firmantes registrados en [EstadoTDBO] son los participantes.
+     * Consejo:
+     * - En kotlin puedes comprobar si dos sets son iguales usando el operador ==.
+     * - Necesitamos comprobar que los firmantes de la transacción son un subset de la lista de participantes.
+     * - No queremos llaves publicas adicionales que no estén en la lista de particpantes del TDBO.
+     * - Necesitarás una referencia al comando Emitir para tener acceso a la lista de firmantes.
+     * - [requireSingleCommand] devuelve el comando singular requerido - puedes asignar el valor devuelto a una constante.
      *
-     * Kotlin Hints
-     * Kotlin provides a map function for easy conversion of a [Collection] using map
+     * Consejos de Kotlin
+     * Kotlin provee la función map para una conversión fácil de [Collection] usando map
      * - https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/map.html
-     * [Collection] can be turned into a set using toSet()
+     * [Collection] puede convertirse en un set usando toSet()
      * - https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/to-set.html
      */
-//    @Test
-//    fun lenderAndBorrowerMustSignIssueTransaction() {
-//        val iou = IOUState(1.POUNDS, ALICE.party, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                command(DUMMY.publicKey, IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Both lender and borrower together only may sign IOU issue transaction."
-//            }
-//            transaction {
-//                command(ALICE.publicKey, IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Both lender and borrower together only may sign IOU issue transaction."
-//            }
-//            transaction {
-//                command(BOB.publicKey, IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Both lender and borrower together only may sign IOU issue transaction."
-//            }
-//            transaction {
-//                command(listOf(BOB.publicKey, BOB.publicKey, BOB.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Both lender and borrower together only may sign IOU issue transaction."
-//            }
-//            transaction {
-//                command(listOf(BOB.publicKey, BOB.publicKey, MINICORP.publicKey, ALICE.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "Both lender and borrower together only may sign IOU issue transaction."
-//            }
-//            transaction {
-//                command(listOf(BOB.publicKey, BOB.publicKey, BOB.publicKey, ALICE.publicKey), IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this.verifies()
-//            }
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey),IOUContract.Commands.Issue())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun lenderAndBorrowerMustSignIssueTransaction() {
+        val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                command(DUMMY.publicKey, ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "El prestamista y el deudor deben de firmar juntos para emitir un TDBO."
+            }
+            transaction {
+                command(ALICE.publicKey, ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "El prestamista y el deudor deben de firmar juntos para emitir un TDBO."
+            }
+            transaction {
+                command(BOB.publicKey, ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "El prestamista y el deudor deben de firmar juntos para emitir un TDBO."
+            }
+            transaction {
+                command(listOf(BOB.publicKey, BOB.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "El prestamista y el deudor deben de firmar juntos para emitir un TDBO."
+            }
+            transaction {
+                command(listOf(BOB.publicKey, BOB.publicKey, MINICORP.publicKey, ALICE.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "El prestamista y el deudor deben de firmar juntos para emitir un TDBO."
+            }
+            transaction {
+                command(listOf(BOB.publicKey, BOB.publicKey, BOB.publicKey, ALICE.publicKey), ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this.verifies()
+            }
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey),ContratoTDBO.Commands.Emitir())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this.verifies()
+            }
+        }
+    }
 }
