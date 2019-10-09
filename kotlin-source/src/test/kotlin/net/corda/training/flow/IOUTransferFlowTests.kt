@@ -32,7 +32,7 @@ class IOUTransferFlowTests {
         c = mockNetwork.createNode(MockNodeParameters())
         val startedNodes = arrayListOf(a, b, c)
         // For real nodes this happens automatically, but we have to manually register the flow for tests
-        startedNodes.forEach { it.registerInitiatedFlow(IOUIssueFlowResponder::class.java) }
+        startedNodes.forEach { it.registerInitiatedFlow(TDBOEmitirFlowResponder::class.java) }
         startedNodes.forEach { it.registerInitiatedFlow(IOUTransferFlowResponder::class.java) }
         mockNetwork.runNetwork()
     }
@@ -46,7 +46,7 @@ class IOUTransferFlowTests {
      * Issue an IOU on the ledger, we need to do this before we can transfer one.
      */
     private fun issueIou(iou: EstadoTDBO): SignedTransaction {
-        val flow = IOUIssueFlow(iou)
+        val flow = TDBOEmitirFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
         return future.getOrThrow()
@@ -57,7 +57,7 @@ class IOUTransferFlowTests {
      * Build out the beginnings of [IOUTransferFlow]!
      * TODO: Implement the [IOUTransferFlow] flow which builds and returns a partially [SignedTransaction].
      * Hint:
-     * - This flow will look similar to the [IOUIssueFlow].
+     * - This flow will look similar to the [TDBOEmitirFlow].
      * - This time our transaction has an input state, so we need to retrieve it from the vault!
      * - You can use the [serviceHub.vaultService.queryBy] method to get the latest linear states of a particular
      *   type from the vault. It returns a list of states matching your query.
@@ -67,7 +67,7 @@ class IOUTransferFlowTests {
      * - Remember, as we are involving three parties we will need to collect three signatures, so need to add three
      *   [PublicKey]s to the Command's signers list. We can get the signers from the input IOU and the new IOU you
      *   have just created with the new lender.
-     * - Verify and sign the transaction as you did with the [IOUIssueFlow].
+     * - Verify and sign the transaction as you did with the [TDBOEmitirFlow].
      * - Return the partially signed transaction.
      */
 //    @Test
@@ -137,7 +137,7 @@ class IOUTransferFlowTests {
      * Task 4.
      * Get the borrowers and the new lenders signatures.
      * TODO: Amend the [IOUTransferFlow] to handle collecting signatures from multiple parties.
-     * Hint: use [initiateFlow] and the [CollectSignaturesFlow] in the same way you did for the [IOUIssueFlow].
+     * Hint: use [initiateFlow] and the [CollectSignaturesFlow] in the same way you did for the [TDBOEmitirFlow].
      */
 //    @Test
 //    fun flowReturnsTransactionSignedByAllParties() {

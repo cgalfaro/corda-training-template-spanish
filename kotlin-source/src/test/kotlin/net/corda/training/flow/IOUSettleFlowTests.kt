@@ -35,7 +35,7 @@ class IOUSettleFlowTests {
         c = mockNetwork.createNode(MockNodeParameters())
         val startedNodes = arrayListOf(a, b, c)
         // For real nodes this happens automatically, but we have to manually register the flow for tests
-        startedNodes.forEach { it.registerInitiatedFlow(IOUIssueFlowResponder::class.java) }
+        startedNodes.forEach { it.registerInitiatedFlow(TDBOEmitirFlowResponder::class.java) }
         startedNodes.forEach { it.registerInitiatedFlow(IOUSettleFlowResponder::class.java) }
         mockNetwork.runNetwork()
     }
@@ -49,7 +49,7 @@ class IOUSettleFlowTests {
      * Issue an IOU on the ledger, we need to do this before we can transfer one.
      */
     private fun issueIou(iou: EstadoTDBO): SignedTransaction {
-        val flow = IOUIssueFlow(iou)
+        val flow = TDBOEmitirFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
         return future.getOrThrow()

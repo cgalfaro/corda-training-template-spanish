@@ -2,6 +2,8 @@ package net.corda.training.contract
 
 import net.corda.core.contracts.*
 import net.corda.core.transactions.LedgerTransaction
+import net.corda.finance.contracts.asset.Cash
+import net.corda.finance.contracts.utils.sumCash
 import net.corda.training.state.EstadoTDBO
 import java.lang.reflect.Type
 
@@ -26,6 +28,7 @@ class ContratoTDBO : Contract {
         // class HazAlgo : TypeOnlyCommandData(), Commands
         class Emitir : TypeOnlyCommandData(), Commands
         class Transferir : TypeOnlyCommandData(), Commands
+        class Liquidar : TypeOnlyCommandData(), Commands
     }
 
     /**
@@ -60,6 +63,32 @@ class ContratoTDBO : Contract {
                 "El deudor, el prestamista anterior y el nuevo prestamista deben firmar una transferencia de TDBO" using
                         (comando.signers.toSet() == (estadoEntrada.participants.map { it.owningKey }.toSet() union
                                 estadoSalida.participants.map { it.owningKey }.toSet()))
+            }
+            is Commands.Liquidar -> requireThat {
+                val tdbos = tx.groupStates<EstadoTDBO, UniqueIdentifier> { it.linearId }.single()
+                "Debe existir un TDBO de entrada para liquidar." using (tdbos.inputs.size == 1)
+                val cash = tx.outputsOfType<Cash.State>()
+                "Debe existir una salida cash." using (cash.isNotEmpty())
+                val tdboEntrada = tdbos.inputs.single()
+                val cashAceptado = cash.filter { it.owner == tdboEntrada.prestamista }
+                "Debe existir cash en estado de salida pagado al prestamista." using (cashAceptado.isNotEmpty())
+                val sumaCashAceptado = cashAceptado.sumCash().withoutIssuer()
+                val faltaPorPagar = tdboEntrada.cantidad - tdboEntrada.pagado
+                "La cantidad que se paga no puede ser más que la cantidad que falta pagar." using
+                        (faltaPorPagar >= sumaCashAceptado)
+                if (faltaPorPagar == sumaCashAceptado) {
+                    "La deuda se pagó completa no debe existir TDBO de salida." using
+                            (tdbos.outputs.isEmpty())
+                } else {
+                    "La deuda no se pagó completa debe haber un TDBO de salida." using
+                            (tdbos.outputs.size == 1)
+                    val tdboSalida = tdbos.outputs.single()
+                    "El deudor no puede cambiar cuando liquidamos." using (tdboEntrada.deudor == tdboSalida.deudor)
+                    "La cantidad no puede cambiar cuando liquidamos." using (tdboEntrada.cantidad == tdboSalida.cantidad)
+                    "El prestamista no puede cambiar cuando liquidamos." using (tdboEntrada.prestamista == tdboSalida.prestamista)
+                }
+                "Ambos el prestamista y el deudor deben firmar una transacción de liquidar." using
+                        (comando.signers.toSet() == tdboEntrada.participants.map { it.owningKey }.toSet())
             }
         }
 

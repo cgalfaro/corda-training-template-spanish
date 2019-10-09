@@ -7,12 +7,19 @@ import net.corda.core.contracts.withoutIssuer
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.internal.packageName
+import net.corda.finance.DOLLARS
+import net.corda.finance.POUNDS
 import net.corda.finance.`issued by`
 import net.corda.finance.contracts.asset.Cash
 import net.corda.finance.schemas.CashSchemaV1
 import net.corda.testing.core.TestIdentity
 import net.corda.testing.node.MockServices
+import net.corda.testing.node.ledger
+import net.corda.training.ALICE
+import net.corda.training.BOB
+import net.corda.training.CHARLIE
 import net.corda.training.state.EstadoTDBO
+import org.junit.Test
 import java.util.*
 
 /**
@@ -42,414 +49,416 @@ class IOUSettleTests {
      * TODO: Agregar el caso [ContratoTDBO.Commands.Settle] a la función verify.
      * Consejo: Por el momento puedes dejar el cuerpo vacio.
      */
-//    @Test
-//    fun mustIncludeSettleCommand() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        val inputCash = createCashState(5.POUNDS, BOB.party)
-//        val outputCash = inputCash.withNewOwner(newOwner = ALICE.party).ownableState
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, inputCash)
-//                output(Cash.PROGRAM_ID, outputCash)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                this.failsWith("Contract verification failed");
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, inputCash)
-//                output(Cash.PROGRAM_ID, outputCash)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand()) // Wrong type.
-//                this.failsWith("Contract verification failed");
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, inputCash)
-//                output(Cash.PROGRAM_ID, outputCash)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle()) // Correct Type.
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustIncludeSettleCommand() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        val cashEntrada = createCashState(5.POUNDS, BOB.party)
+        val cashSalida = cashEntrada.withNewOwner(newOwner = ALICE.party).ownableState
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cashEntrada)
+                output(Cash.PROGRAM_ID, cashSalida)
+                command(BOB.publicKey, Cash.Commands.Move())
+                this.failsWith("Contract verification failed");
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cashEntrada)
+                output(Cash.PROGRAM_ID, cashSalida)
+                command(BOB.publicKey, Cash.Commands.Move())
+                command(listOf(ALICE.publicKey, BOB.publicKey), DummyCommand()) // Tipo incorrecto.
+                this.failsWith("Contract verification failed");
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cashEntrada)
+                output(Cash.PROGRAM_ID, cashSalida)
+                command(BOB.publicKey, Cash.Commands.Move())
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar()) // Correct Type.
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 2.
-     * For now, we only want to settle one IOU at once. We can use the [TransactionForContract.groupStates] function
-     * to group the IOUs by their [linearId] property. We want to make sure there is only one group of input and output
-     * IOUs.
-     * TODO: Using [groupStates] add a constraint that checks for one group of input/output IOUs.
-     * Hint:
-     * - The [single] function enforces a single element in a list or throws an exception.
-     * - The [groupStates] function takes two type parameters: the type of the state you wish to group by and the type
-     *   of the grouping key used, in this case as you need to use the [linearId] and it is a [UniqueIdentifier].
-     * - The [groupStates] also takes a lambda function which selects a property of the state to decide the groups.
-     * - In Kotlin if the last argument of a function is a lambda, you can call it like this:
+     * Tarea 2.
+     * Por ahora, solo queremos liquidar un TDBO de un solo. Podemos usar la función [TransactionForContract.groupStates]
+     * para agrupar los TDBOs por la propiedad [linearId]. Queremos asegurarnos que solo exista un grupo de entradas y salidas
+     * de TDBOs.
+     * TODO: Usando [groupStates] agrega una restricción que revise por un grupo de entradas/salidas de TDBOs.
+     * Consejo:
+     * - La función [single] fuerza a un elemento único en la lista o lanza una excepción.
+     * - La función [groupStates] recibe dos tipos de parámetros: el tipo de estado por el que quieres agrupar y el tipo
+     *   de llave de agrupación que utilizas, en este caso debes utilizar [linearId] y es un [UniqueIdentifier].
+     * - La función [groupStates] tambien recibe una función lambda que selecciona una propiedad del estado para decidir los grupos.
+     * - En Kotlin si el último argumento de una función es una lambda, la puedes llamar de la siguiente manera:
      *
-     *       fun functionWithLambda() { it.property }
+     *       fun funcionConLambda() { it.property }
      *
-     *   This is exactly how map / filter are used in Kotlin.
+     *   Esto es como map / filter son utilizados en Kotlin.
      */
-//    @Test
-//    fun mustBeOneGroupOfIOUs() {
-//        val iouOne = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        val iouTwo = IOUState(5.POUNDS, ALICE.party, BOB.party)
-//        val inputCash = createCashState(5.POUNDS, BOB.party)
-//        val outputCash = inputCash.withNewOwner(newOwner = ALICE.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iouOne)
-//                input(IOUContract.IOU_CONTRACT_ID, iouTwo)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                output(IOUContract.IOU_CONTRACT_ID, iouOne.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, inputCash)
-//                output(Cash.PROGRAM_ID, outputCash.ownableState)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                this `fails with` "List has more than one element."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iouOne)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                output(IOUContract.IOU_CONTRACT_ID, iouOne.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, inputCash)
-//                output(Cash.PROGRAM_ID, outputCash.ownableState)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustBeOneGroupOfIOUs() {
+        val tdboUno = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        val tdboDos = EstadoTDBO(5.POUNDS, ALICE.party, BOB.party)
+        val cashEntrada = createCashState(5.POUNDS, BOB.party)
+        val cashSalida = cashEntrada.withNewOwner(newOwner = ALICE.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdboDos)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cashEntrada)
+                output(Cash.PROGRAM_ID, cashSalida.ownableState)
+                command(BOB.publicKey, Cash.Commands.Move())
+                this `fails with` "List has more than one element."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cashEntrada)
+                output(Cash.PROGRAM_ID, cashSalida.ownableState)
+                command(BOB.publicKey, Cash.Commands.Move())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 3.
-     * There always has to be one input IOU in a settle transaction but there might not be an output IOU.
-     * TODO: Add a constraint to check there is always one input IOU.
+     * Tarea 3.
+     * Siempre debe de haber un TDBO de entrada en una transacción de liquidar, pero pueda que no exista un TDBO de salida.
+     * TODO: Agrega una restricción para comprobar que siempre exista un TDBO de entrada.
      */
-//    @Test
-//    fun mustHaveOneInputIOU() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        val iouOne = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        val tenPounds = createCashState(10.POUNDS, BOB.party)
-//        val fivePounds = createCashState(5.POUNDS, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                output(IOUContract.IOU_CONTRACT_ID, iou)
-//                this `fails with` "There must be one input IOU."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iouOne)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                output(IOUContract.IOU_CONTRACT_ID, iouOne.pay(5.POUNDS))
-//                input(Cash.PROGRAM_ID, fivePounds)
-//                output(Cash.PROGRAM_ID, fivePounds.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                this.verifies()
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iouOne)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                input(Cash.PROGRAM_ID, tenPounds)
-//                output(Cash.PROGRAM_ID, tenPounds.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, Cash.Commands.Move())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustHaveOneInputIOU() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        val tdboUno = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        val diezLibras = createCashState(10.POUNDS, BOB.party)
+        val cincoLibras = createCashState(5.POUNDS, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                this `fails with` "Debe existir un TDBO de entrada para liquidar."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno.pagar(5.POUNDS))
+                input(Cash.PROGRAM_ID, cincoLibras)
+                output(Cash.PROGRAM_ID, cincoLibras.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, Cash.Commands.Move())
+                this.verifies()
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdboUno)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                input(Cash.PROGRAM_ID, diezLibras)
+                output(Cash.PROGRAM_ID, diezLibras.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, Cash.Commands.Move())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 4.
-     * Now we need to ensure that there are cash states present in the outputs list. The [ContratoTDBO] doesn't care
-     * about input cash as the validity of the cash transaction will be checked by the [Cash] contract. We do however
-     * need to count how much cash is being used to settle and update our [EstadoTDBO] accordingly.
-     * TODO: Filter out the cash states from the list of outputs list and assign them to a constant.
-     * Hint:
-     * - Use the [outputsOfType] extension function to filter the transaction's outputs by type, in this case [Cash.State].
+     * Tarea 4.
+     * Ahora debemos asegurarnos que existan estados cash en la lista de salidas. Al [ContratoTDBO] no le importa
+     * la validez del cash ya que la transacción será revisada por el contrato [Cash]. Sin embargo
+     * cuanto cash está siendo utilizado para liquidar y actualizar nuestro [EstadoTDBO] debidamente.
+     * TODO: Filtra los estados cash de la lista de salidas, asignalas a una constante y verifica que hay una salida de Cash.
+     * Consejo:
+     * - Use la función [outputsOfType] para filtrar lassalidas de la transacción por tipo, en este caso [Cash.State].
      */
-//    @Test
-//    fun mustBeCashOutputStatesPresent() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val cash = createCashState(5.DOLLARS, BOB.party)
-//        val cashPayment = cash.withNewOwner(newOwner = ALICE.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "There must be output cash."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, cash)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                output(Cash.PROGRAM_ID, cashPayment.ownableState)
-//                command(BOB.publicKey, cashPayment.command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustBeCashOutputStatesPresent() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val cash = createCashState(5.DOLLARS, BOB.party)
+        val pagoEnCash = cash.withNewOwner(newOwner = ALICE.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "Debe existir una salida cash."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cash)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                output(Cash.PROGRAM_ID, pagoEnCash.ownableState)
+                command(BOB.publicKey, pagoEnCash.command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 5.
-     * Not only to we need to check that [Cash] output states are present but we need to check that the payer is
-     * correctly assigning us as the new owner of these states.
-     * TODO: Add a constraint to check that we are the new owner of the output cash.
-     * Hint:
-     * - Not all of the cash may be assigned to us as some of the input cash may be sent back to the payer as change.
-     * - We need to use the [Cash.State.owner] property to check to see that it is the value of our public key.
-     * - Use [filter] to filter over the list of cash states to get the ones which are being assigned to us.
-     * - Once we have this filtered list, we can sum the cash being paid to us so we know how much is being settled.
+     * Tarea 5.
+     * No solo debemos verificar que los estados [Cash] de salida están presentes también necesitamos revisar que el pagador
+     * está asignando correctamente al prestamista como el dueño de estos estados.
+     * TODO: Agregar una restriccón para asegurarnos que el prestamista sea el dueño del estado de salida Cash.
+     * Consejo:
+     * - El cash completo no puede ser asignado a nosotros ya que parte del cash de input ouede ser devuelto al pagador como vuelto.
+     * - Necesitamos usar la propiedad [Cash.State.owner] para revisar que sea el valor de la llave pública del prestamista.
+     * - Use [filter] para filtrar la lista de estados cash para que el prestamista reciba los que tiene asignados.
+     * - Una vez hayamos filtrado la lista, podemos sumar el cash pagado al prestamista para saber cuánto está liquidando.
      */
-//    @Test
-//    fun mustBeCashOutputStatesWithRecipientAsOwner() {
-//        val iou = IOUState(10.POUNDS, ALICE.party, BOB.party)
-//        val cash = createCashState(5.POUNDS, BOB.party)
-//        val invalidCashPayment = cash.withNewOwner(newOwner = CHARLIE.party)
-//        val validCashPayment = cash.withNewOwner(newOwner = ALICE.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, cash)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.POUNDS))
-//                output(Cash.PROGRAM_ID, "outputs cash", invalidCashPayment.ownableState)
-//                command(BOB.publicKey, invalidCashPayment.command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "There must be output cash paid to the recipient."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, cash)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.POUNDS))
-//                output(Cash.PROGRAM_ID, validCashPayment.ownableState)
-//                command(BOB.publicKey, validCashPayment.command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustBeCashOutputStatesWithRecipientAsOwner() {
+        val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
+        val cash = createCashState(5.POUNDS, BOB.party)
+        val pagoCashInvalido = cash.withNewOwner(newOwner = CHARLIE.party)
+        val pagoCashValido = cash.withNewOwner(newOwner = ALICE.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cash)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.POUNDS))
+                output(Cash.PROGRAM_ID, "outputs cash", pagoCashInvalido.ownableState)
+                command(BOB.publicKey, pagoCashInvalido.command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "Debe existir cash en estado de salida pagado al prestamista."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cash)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.POUNDS))
+                output(Cash.PROGRAM_ID, pagoCashValido.ownableState)
+                command(BOB.publicKey, pagoCashValido.command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 6.
-     * Now we need to sum the cash which is being assigned to us and compare this total against how much of the iou is
-     * left to pay.
-     * TODO: Add a constraint that checks we cannot be paid more than the remaining IOU amount left to pay.
-     * Hint:
-     * - The remaining amount of the IOU is the amount less the paid property.
-     * - To sum a list of [Cash.State]s use the [sumCash] function.
-     * - The [sumCash] function returns an [Issued<Amount<Currency>>] type. We don't care about the issuer so we can
-     *   apply [withoutIssuer] to unwrap the [Amount] from [Issuer].
-     * - We can compare the amount left paid to the amount being paid to use, ensuring the amount being paid isn't too
-     *   much.
+     * Tarea 6.
+     * Ahora debemos sumar el cash que se esta asignando al prestamista y comparar este total con cuanto del TDBO
+     * hace falta pagar.
+     * TODO: Agrega un restricción que revisa que no se puede pagar al prestamista mas de lo que falta pagar del TDBO.
+     * Consejo:
+     * - La cantidad restandte del TDBO lo obtenemos al restar las propiedades [EstadoTDBO.cantidad] menos [EstadoTDBO.pagado].
+     * - Para sumar la lista de [Cash.State]s use la función [sumCash].
+     * - La función [sumCash] devuelve de tipo [Issued<Amount<Currency>>]. No nos interesa quien lo creó por lo que podemos
+     *   aplicar [withoutIssuer] para descubrir [Amount] de [Issuer].
+     * - Podemos comparar la cantidad que falta pagar con la cantidad utilizada para pagar, asegurándonos
+     *   que la cantidad que pagamos no sea demasiado.
      */
-//    @Test
-//    fun cashSettlementAmountMustBeLessThanRemainingIOUAmount() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val elevenDollars = createCashState(11.DOLLARS, BOB.party)
-//        val tenDollars = createCashState(10.DOLLARS, BOB.party)
-//        val fiveDollars = createCashState(5.DOLLARS, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, elevenDollars)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(11.DOLLARS))
-//                output(Cash.PROGRAM_ID, elevenDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, elevenDollars.withNewOwner(newOwner = ALICE.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "The amount settled cannot be more than the amount outstanding."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = ALICE.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this.verifies()
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, tenDollars)
-//                output(Cash.PROGRAM_ID, tenDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, tenDollars.withNewOwner(newOwner = ALICE.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun cashSettlementAmountMustBeLessThanRemainingIOUAmount() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val onceDolares = createCashState(11.DOLLARS, BOB.party)
+        val diezDolares = createCashState(10.DOLLARS, BOB.party)
+        val cincoDolares = createCashState(5.DOLLARS, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, onceDolares)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(11.DOLLARS))
+                output(Cash.PROGRAM_ID, onceDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, onceDolares.withNewOwner(newOwner = ALICE.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "La cantidad que se paga no puede ser más que la cantidad que falta pagar."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = ALICE.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this.verifies()
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, diezDolares)
+                output(Cash.PROGRAM_ID, diezDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, diezDolares.withNewOwner(newOwner = ALICE.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this.verifies()
+            }
+        }
+    }
 
     /**
      * Task 7.
-     * Kotlin's type system should handle this for you but it goes without saying that we should only be able to settle
-     * in the currency that the IOU in denominated in.
-     * TODO: You shouldn't have anything to do here but here are some tests just to make sure!
+     * El type system de Kotlin debería de manejar esto por nosotros pero debemos mencionar que solo deberiamos poder liquidar
+     * en la moneda que el TDBO ha sido creada.
+     * TODO: ¡No deberías de hacer nada pero aquí hay unas pruebas para asegurarnos!
+     * Consejo: Lee y comprende las pruebas.
      */
-//    @Test
-//    fun cashSettlementMustBeInTheCorrectCurrency() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val tenDollars = createCashState(10.DOLLARS, BOB.party)
-//        val tenPounds = createCashState(10.POUNDS, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, tenPounds)
-//                output(Cash.PROGRAM_ID, tenPounds.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, tenPounds.withNewOwner(newOwner = ALICE.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "Token mismatch: GBP vs USD"
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, tenDollars)
-//                output(Cash.PROGRAM_ID, tenDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, tenDollars.withNewOwner(newOwner = ALICE.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this.verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun cashSettlementMustBeInTheCorrectCurrency() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val diezDolares = createCashState(10.DOLLARS, BOB.party)
+        val diezLibras = createCashState(10.POUNDS, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, diezLibras)
+                output(Cash.PROGRAM_ID, diezLibras.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, diezLibras.withNewOwner(newOwner = ALICE.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "Token mismatch: GBP vs USD"
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, diezDolares)
+                output(Cash.PROGRAM_ID, diezDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, diezDolares.withNewOwner(newOwner = ALICE.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this.verifies()
+            }
+        }
+    }
 
     /**
-     * Task 8.
-     * If we fully settle the IOU, then we are done and thus don't require one on ledgerServices.ledger anymore. However, if we only
-     * partially settle the IOU, then we want to keep the IOU on ledger with an amended [paid] property.
-     * TODO: Write a constraint that ensures the correct behaviour depending on the amount settled vs amount remaining.
-     * Hint: You can use a simple if statement and compare the total amount paid vs amount left to settle.
+     * Tarea 8.
+     * Si pagamos el TDBO completo, ya terminamos y no se requiere un [EstadoTDBO] (ledgerServices.ledger). Sin embargo,
+     * si solo pagamos parcialmente el TDBO, entonces queremos manten el TDBO en el libro mayor (ledger) con un cambio
+     * a la propiedad [EstadoTDBO.pagado].
+     * TODO: Escribe una restricción que aegure que el comportamiento correcto se ejecute dependiendo de la cantidad pagada vs el restante.
+     * Consejo: Puedes usar un "if" y comparar el total de la cantidad pagada vs lo que falta por pagar.
      */
-//    @Test
-//    fun mustOnlyHaveOutputIOUIfNotFullySettling() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val tenDollars = createCashState(10.DOLLARS, BOB.party)
-//        val fiveDollars = createCashState(5.DOLLARS, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "There must be one output IOU."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                verifies()
-//            }
-//            transaction {
-//                input(Cash.PROGRAM_ID, tenDollars)
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(10.DOLLARS))
-//                output(Cash.PROGRAM_ID, tenDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, tenDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "There must be no output IOU as it has been fully settled."
-//            }
-//            transaction {
-//                input(Cash.PROGRAM_ID, tenDollars)
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(Cash.PROGRAM_ID, tenDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                command(BOB.publicKey, tenDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustOnlyHaveOutputIOUIfNotFullySettling() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val diezDolares = createCashState(10.DOLLARS, BOB.party)
+        val cincoDolares = createCashState(5.DOLLARS, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "La deuda no se pagó completa debe haber un TDBO de salida."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                verifies()
+            }
+            transaction {
+                input(Cash.PROGRAM_ID, diezDolares)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(10.DOLLARS))
+                output(Cash.PROGRAM_ID, diezDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, diezDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "La deuda se pagó completa no debe existir TDBO de salida."
+            }
+            transaction {
+                input(Cash.PROGRAM_ID, diezDolares)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(Cash.PROGRAM_ID, diezDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                command(BOB.publicKey, diezDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                verifies()
+            }
+        }
+    }
 
     /**
-     * Task 9.
-     * We want to make sure that the only property of the IOU which changes when we settle, is the paid amount.
-     * TODO: Write a constraint to check only the paid property of the [EstadoTDBO] changes when settling.
+     * Tarea 9.
+     * Queremos asegurarnos que únicamente cambie la propiedad pagado en una transacción de liquidar TDBO.
+     * TODO: Escribe una restricción para verificar que solo la propiedad [EstadoTDBO.pagado] cambie cuando liquidamos.
      */
-//    @Test
-//    fun onlyPaidPropertyMayChange() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val fiveDollars = createCashState(5.DOLLARS, BOB.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.copy(borrower = ALICE.party, paid = 5.DOLLARS))
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "The borrower may not change when settling."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.copy(amount = 0.DOLLARS, paid = 5.DOLLARS))
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "The amount may not change when settling."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.copy(lender = CHARLIE.party, paid = 5.DOLLARS))
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                this `fails with` "The lender may not change when settling."
-//            }
-//            transaction {
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                input(Cash.PROGRAM_ID, fiveDollars)
-//                output(Cash.PROGRAM_ID, fiveDollars.withNewOwner(newOwner = ALICE.party).ownableState)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(BOB.publicKey, fiveDollars.withNewOwner(newOwner = BOB.party).command)
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun onlyPaidPropertyMayChange() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val cincoDolares = createCashState(5.DOLLARS, BOB.party)
+        ledgerServices.ledger {
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.copy(deudor = ALICE.party, pagado = 5.DOLLARS))
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "El deudor no puede cambiar cuando liquidamos."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.copy(cantidad = 0.DOLLARS, pagado = 5.DOLLARS))
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "La cantidad no puede cambiar cuando liquidamos."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.copy(prestamista = CHARLIE.party, pagado = 5.DOLLARS))
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                this `fails with` "El prestamista no puede cambiar cuando liquidamos."
+            }
+            transaction {
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                input(Cash.PROGRAM_ID, cincoDolares)
+                output(Cash.PROGRAM_ID, cincoDolares.withNewOwner(newOwner = ALICE.party).ownableState)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(BOB.publicKey, cincoDolares.withNewOwner(newOwner = BOB.party).command)
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                verifies()
+            }
+        }
+    }
 
     /**
      * Task 10.
-     * Both the lender and the borrower must have signed an IOU issue transaction.
-     * TODO: Add a constraint to the contract code that ensures this is the case.
+     * Ambos el prestamista y el deudor deben firmar una transacción de liquidar.
+     * TODO: Añada una restricción al codigo de contrato que asegure lo mencionado arriba.
      */
-//    @Test
-//    fun mustBeSignedByAllParticipants() {
-//        val iou = IOUState(10.DOLLARS, ALICE.party, BOB.party)
-//        val cash = createCashState(5.DOLLARS, BOB.party)
-//        val cashPayment = cash.withNewOwner(newOwner = ALICE.party)
-//        ledgerServices.ledger {
-//            transaction {
-//                input(Cash.PROGRAM_ID, cash)
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(Cash.PROGRAM_ID, cashPayment.ownableState)
-//                command(BOB.publicKey, cashPayment.command)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(listOf(ALICE.publicKey, CHARLIE.publicKey), IOUContract.Commands.Settle())
-//                failsWith("Both lender and borrower together only must sign IOU settle transaction.")
-//            }
-//            transaction {
-//                input(Cash.PROGRAM_ID, cash)
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(Cash.PROGRAM_ID, cashPayment.ownableState)
-//                command(BOB.publicKey, cashPayment.command)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(BOB.publicKey, IOUContract.Commands.Settle())
-//                failsWith("Both lender and borrower together only must sign IOU settle transaction.")
-//            }
-//            transaction {
-//                input(Cash.PROGRAM_ID, cash)
-//                input(IOUContract.IOU_CONTRACT_ID, iou)
-//                output(Cash.PROGRAM_ID, cashPayment.ownableState)
-//                command(BOB.publicKey, cashPayment.command)
-//                output(IOUContract.IOU_CONTRACT_ID, iou.pay(5.DOLLARS))
-//                command(listOf(ALICE.publicKey, BOB.publicKey), IOUContract.Commands.Settle())
-//                verifies()
-//            }
-//        }
-//    }
+    @Test
+    fun mustBeSignedByAllParticipants() {
+        val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
+        val cash = createCashState(5.DOLLARS, BOB.party)
+        val pagoCash = cash.withNewOwner(newOwner = ALICE.party)
+        ledgerServices.ledger {
+            transaction {
+                input(Cash.PROGRAM_ID, cash)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(Cash.PROGRAM_ID, pagoCash.ownableState)
+                command(BOB.publicKey, pagoCash.command)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(listOf(ALICE.publicKey, CHARLIE.publicKey), ContratoTDBO.Commands.Liquidar())
+                failsWith("Ambos el prestamista y el deudor deben firmar una transacción de liquidar.")
+            }
+            transaction {
+                input(Cash.PROGRAM_ID, cash)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(Cash.PROGRAM_ID, pagoCash.ownableState)
+                command(BOB.publicKey, pagoCash.command)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(BOB.publicKey, ContratoTDBO.Commands.Liquidar())
+                failsWith("Ambos el prestamista y el deudor deben firmar una transacción de liquidar.")
+            }
+            transaction {
+                input(Cash.PROGRAM_ID, cash)
+                input(ContratoTDBO.TDBO_CONTRACT_ID, tdbo)
+                output(Cash.PROGRAM_ID, pagoCash.ownableState)
+                command(BOB.publicKey, pagoCash.command)
+                output(ContratoTDBO.TDBO_CONTRACT_ID, tdbo.pagar(5.DOLLARS))
+                command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Liquidar())
+                verifies()
+            }
+        }
+    }
 }
 
