@@ -21,17 +21,17 @@ import net.corda.training.state.EstadoTDBO
 import java.util.*
 
 /**
- * This is the flow which handles the (partial) settlement of existing IOUs on the ledger.
- * Gathering the counterparty's signature is handled by the [CollectSignaturesFlow].
- * Notarisation (if required) and commitment to the ledger is handled vy the [FinalityFlow].
- * The flow returns the [SignedTransaction] that was committed to the ledger.
+ * Este es el flujo que maneja la liquidación (parcial) de TDBOs existentes en el libro mayor.
+ * La adquisición de la firma de la contraparte es manejado por [CollectSignaturesFlow].
+ * La notarización (si es necesaria) y la actualización del libro mayor es manejado por [FinalityFlow].
+ * El flujo devuelve la transacción firmada ([SignedTransaction]) que fue almacenada en el libro mayor.
  */
 @InitiatingFlow
 @StartableByRPC
-class IOUSettleFlow(val linearId: UniqueIdentifier, val amount: Amount<Currency>): FlowLogic<SignedTransaction>() {
+class TDBOLiquidarFlow(val linearId: UniqueIdentifier, val amount: Amount<Currency>): FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call(): SignedTransaction {
-        // Placeholder code to avoid type error when running the tests. Remove before starting the flow task!
+        // Codigo por defecto para evitar problemas al ejecutar los unit tests. ¡Remover antes de comenzar las tareas de flujos!
         return serviceHub.signInitialTransaction(
                 TransactionBuilder(notary = null)
         )
@@ -39,10 +39,10 @@ class IOUSettleFlow(val linearId: UniqueIdentifier, val amount: Amount<Currency>
 }
 
 /**
- * This is the flow which signs IOU settlements.
- * The signing is handled by the [SignTransactionFlow].
+ * Este es el flow que firma las liquidaciones de TDBOs.
+ * La firma es manejada por el [SignTransactionFlow].
  */
-@InitiatedBy(IOUSettleFlow::class)
+@InitiatedBy(TDBOLiquidarFlow::class)
 class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
     @Suspendable
     override fun call() {
@@ -60,19 +60,19 @@ class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
 @InitiatingFlow
 @StartableByRPC
 /**
- * Self issues the calling node an amount of cash in the desired currency.
- * Only used for demo/sample/training purposes!
+ * Emite la cantidad de cash en la moneda deseada al nodo que llama.
+ * ¡Sólo para ser utilizado para propósito de demo/ejemplo/entrenamiento.
  */
 class SelfIssueCashFlow(val amount: Amount<Currency>) : FlowLogic<Cash.State>() {
     @Suspendable
     override fun call(): Cash.State {
-        /** Create the cash issue command. */
+        /** Crea el comando de emitir (issue) cash. */
         val issueRef = OpaqueBytes.of(0)
-        /** Note: ongoing work to support multiple notary identities is still in progress. */
+        /** Nota: seguimos trabajando en poder manejar con multiples notarios, aún no está listo. */
         val notary = serviceHub.networkMapCache.notaryIdentities.first()
-        /** Create the cash issuance transaction. */
+        /** Crea la transacción para emitir el cash. */
         val cashIssueTransaction = subFlow(CashIssueFlow(amount, issueRef, notary))
-        /** Return the cash output. */
+        /** Devuelve el cash de salida. */
         return cashIssueTransaction.stx.tx.outputs.single().data as Cash.State
     }
 }

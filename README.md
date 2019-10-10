@@ -69,9 +69,9 @@ Flow:
 * Issue template: `kotlin-source/src/main/kotlin/net/corda/training/flow/IOUIssueFlow.kt`
 * Issue tests: `kotlin-source/src/test/kotlin/net/corda/training/flow/TDBOEmitirFlowTests.kt`
 * Transfer template `kotlin-source/src/main/kotlin/net/corda/training/flow/IOUTransfer.kt`
-* Transfer tests: `kotlin-source/src/test/kotlin/net/corda/training/flow/IOUTransferFlowTests.kt`
-* Settle template `kotlin-source/src/main/kotlin/net/corda/training/flow/IOUSettleFlow.kt`
-* Settle tests: `kotlin-source/src/test/kotlin/net/corda/training/flow/IOUSettleFlowTests.kt`
+* Transfer tests: `kotlin-source/src/test/kotlin/net/corda/training/flow/TDBOTransferirFlowTests.kt`
+* Settle template `kotlin-source/src/main/kotlin/net/corda/training/flow/TDBOLiquidarFlow.kt`
+* Settle tests: `kotlin-source/src/test/kotlin/net/corda/training/flow/TDBOLiquidarFlowTests.kt`
 
 The code in the following files was already added for you:
 

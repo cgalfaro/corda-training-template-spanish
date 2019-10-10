@@ -9,18 +9,23 @@ import net.corda.training.state.EstadoTDBO
 import net.corda.core.identity.Party
 import net.corda.core.internal.packageName
 import net.corda.core.utilities.getOrThrow
+import net.corda.finance.POUNDS
+import net.corda.finance.contracts.utils.sumCash
 import net.corda.finance.schemas.CashSchemaV1
+import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetworkNotarySpec
 import net.corda.testing.node.MockNodeParameters
 import net.corda.testing.node.StartedMockNode
+import net.corda.training.contract.ContratoTDBO
 import org.junit.*
 import java.util.*
+import kotlin.test.assertEquals
 
 /**
- * Practical exercise instructions Flows part 3.
- * Uncomment the unit tests and use the hints + unit test body to complete the FLows such that the unit tests pass.
+ * Instrucciones para ejercicio práctico de flujos parte 3.
+ * Descomente las pruebas y utilice los consejos + descripciones de tareas para completar el flujo para que las pruebas pasen.
  */
-class IOUSettleFlowTests {
+class TDBOLiquidarFlowTests {
     lateinit var mockNetwork: MockNetwork
     lateinit var a: StartedMockNode
     lateinit var b: StartedMockNode
@@ -34,7 +39,7 @@ class IOUSettleFlowTests {
         b = mockNetwork.createNode(MockNodeParameters())
         c = mockNetwork.createNode(MockNodeParameters())
         val startedNodes = arrayListOf(a, b, c)
-        // For real nodes this happens automatically, but we have to manually register the flow for tests
+        // Para nodos reales esto pasa automaticamente, pero necesitamos registrar a mano el flujo para las pruebas
         startedNodes.forEach { it.registerInitiatedFlow(TDBOEmitirFlowResponder::class.java) }
         startedNodes.forEach { it.registerInitiatedFlow(IOUSettleFlowResponder::class.java) }
         mockNetwork.runNetwork()
@@ -46,7 +51,7 @@ class IOUSettleFlowTests {
     }
 
     /**
-     * Issue an IOU on the ledger, we need to do this before we can transfer one.
+     * Emitir un TDBO en el libro mayor, necesitamos hacer esto antes de transferir uno.
      */
     private fun issueIou(iou: EstadoTDBO): SignedTransaction {
         val flow = TDBOEmitirFlow(iou)
@@ -56,7 +61,7 @@ class IOUSettleFlowTests {
     }
 
     /**
-     * Issue some on-ledger cash to ourselves, we need to do this before we can Settle an IOU.
+     * Emitir un poco de cash en el libro mayor para nosotros, necesitamos esto antes de poder liquidar un TDBO.
      */
     private fun issueCash(amount: Amount<Currency>): Cash.State {
         val flow = SelfIssueCashFlow(amount)
@@ -66,57 +71,57 @@ class IOUSettleFlowTests {
     }
 
     /**
-     * Task 1.
-     * The first task is to grab the [EstadoTDBO] for the given [linearId] from the vault, assemble a transaction
-     * and sign it.
-     * TODO: Grab the IOU for the given [linearId] from the vault, build and sign the settle transaction.
-     * Hints:
-     * - Use the code from the [IOUTransferFlow] to get the correct [EstadoTDBO] from the vault.
-     * - You will need to use the [Cash.generateSpend] functionality of the vault to add the cash states and cash command
-     *   to your transaction. The API is quite simple. It takes a reference to a [TransactionBuilder], an [Amount] and
-     *   the [Party] object for the recipient. The function will mutate your builder by adding the states and commands.
-     * - You then need to produce the output [EstadoTDBO] by using the [EstadoTDBO.pay] function.
-     * - Add the input [EstadoTDBO] [StateAndRef] and the new output [EstadoTDBO] to the transaction.
-     * - Sign the transaction and return it.
+     * Tarea 1.
+     * La primera tarea es obtener de la boveda el [EstadoTDBO] para el [linearId] que recibimos, construye la transacción
+     * y fírmala.
+     * TODO: Obten el TDBO de la bóveda para [linearId] que recibimos, construye y firma la transacción de liquiar.
+     * Consejos:
+     * - Use el codigo de [TDBOTransferirFlow] para obtener [EstadoTDBO] correcto de la bóveda.
+     * - Necesitará utilizar la funcionalidad de [Cash.generateSpend] de la bóveda para agregar los estados cash y comando cash
+     *   a tu transacción. El API es bastante simple. Toma una referencia al [TransactionBuilder], un [Amount] y
+     *   el objeto [Party] del recipiente. La función mutará tu constructor agregando los estados y los comandos.
+     * - Despues debes producir la salida de [EstadoTDBO] utilizando la función [EstadoTDBO.pay].
+     * - Agrega la entrada [EstadoTDBO] [StateAndRef] a la nueva salida de [EstadoTDBO] a la transacción.
+     * - Firma la transacción y devuélvela.
      */
-//    @Test
-//    fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        issueCash(5.POUNDS)
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        val settleResult = future.getOrThrow()
-//        // Check the transaction is well formed...
-//        // One output IOUState, one input IOUState reference, input and output cash
-//        a.transaction {
-//            val ledgerTx = settleResult.toLedgerTransaction(a.services, false)
-//            assert(ledgerTx.inputs.size == 2)
-//            assert(ledgerTx.outputs.size == 2)
-//            val outputIou = ledgerTx.outputs.map { it.data }.filterIsInstance<IOUState>().single()
-//            assertEquals(
-//                    outputIou,
-//                    inputIou.pay(5.POUNDS))
-//            // Sum all the output cash. This is complicated as there may be multiple cash output states with not all of them
-//            // being assigned to the lender.
-//            val outputCashSum = ledgerTx.outputs
-//                    .map { it.data }
-//                    .filterIsInstance<Cash.State>()
-//                    .filter { it.owner == b.info.chooseIdentityAndCert().party }
-//                    .sumCash()
-//                    .withoutIssuer()
-//            // Compare the cash assigned to the lender with the amount claimed is being settled by the borrower.
-//            assertEquals(
-//                    outputCashSum,
-//                    (inputIou.amount - inputIou.paid - outputIou.paid))
-//            val command = ledgerTx.commands.requireSingleCommand<IOUContract.Commands>()
-//            assert(command.value == IOUContract.Commands.Settle())
-//            // Check the transaction has been signed by the borrower.
-//            settleResult.verifySignaturesExcept(b.info.chooseIdentityAndCert().party.owningKey,
-//                    mockNetwork.defaultNotaryNode.info.legalIdentitiesAndCerts.first().owningKey)
-//        }
-//    }
+    @Test
+    fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        issueCash(5.POUNDS)
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        val resultadoLiquidar = futuro.getOrThrow()
+        // Revisa que la transacción esté bien formada...
+        // Una EstadoTDBO de salida, una referencia de EstadoTDBO de entrada, cash de entrada y de salida
+        a.transaction {
+            val ledgerTx = resultadoLiquidar.toLedgerTransaction(a.services, false)
+            assert(ledgerTx.inputs.size == 2)
+            assert(ledgerTx.outputs.size == 2)
+            val tdboSalida = ledgerTx.outputs.map { it.data }.filterIsInstance<EstadoTDBO>().single()
+            assertEquals(
+                    tdboSalida,
+                    tdboEntrada.pagar(5.POUNDS))
+            // Suma cash de salida completo. Esto es complejo ya que pueda que existan múltiples estados de salida cash
+            // y puede que no todos han sido asignados al prestamista.
+            val outputCashSum = ledgerTx.outputs
+                    .map { it.data }
+                    .filterIsInstance<Cash.State>()
+                    .filter { it.owner == b.info.chooseIdentityAndCert().party }
+                    .sumCash()
+                    .withoutIssuer()
+            // Compare el cash asignado al prestamista con la cantidad reclamada que el deudor liquida.
+            assertEquals(
+                    outputCashSum,
+                    (tdboEntrada.cantidad - tdboEntrada.pagado - tdboSalida.pagado))
+            val command = ledgerTx.commands.requireSingleCommand<ContratoTDBO.Commands>()
+            assert(command.value == ContratoTDBO.Commands.Liquidar())
+            // Compruebe que la transacción haya sido firmada por el deudor.
+            resultadoLiquidar.verifySignaturesExcept(b.info.chooseIdentityAndCert().party.owningKey,
+                    mockNetwork.defaultNotaryNode.info.legalIdentitiesAndCerts.first().owningKey)
+        }
+    }
 
     /**
      * Task 2.

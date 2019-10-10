@@ -3,14 +3,7 @@ package net.corda.training.flow
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.requireThat
-import net.corda.core.flows.CollectSignaturesFlow
-import net.corda.core.flows.FinalityFlow
-import net.corda.core.flows.FlowLogic
-import net.corda.core.flows.FlowSession
-import net.corda.core.flows.InitiatedBy
-import net.corda.core.flows.InitiatingFlow
-import net.corda.core.flows.SignTransactionFlow
-import net.corda.core.flows.StartableByRPC
+import net.corda.core.flows.*
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.training.contract.ContratoTDBO
@@ -37,7 +30,9 @@ class TDBOEmitirFlow(val estado: EstadoTDBO) : FlowLogic<SignedTransaction>() {
         constructorDeTransaccion.addCommand(comandoEmitir)
         constructorDeTransaccion.verify(serviceHub)
         val ptx = serviceHub.signInitialTransaction(constructorDeTransaccion)
-        return ptx
+        val sesiones = (estado.participants - ourIdentity).map { initiateFlow(it) }.toSet()
+        val stx = subFlow(CollectSignaturesFlow(ptx, sesiones))
+        return subFlow(FinalityFlow(stx, sesiones))
 
     }
 }
@@ -47,15 +42,17 @@ class TDBOEmitirFlow(val estado: EstadoTDBO) : FlowLogic<SignedTransaction>() {
  * El firmar es manejador por el flujo [SignTransactionFlow].
  */
 @InitiatedBy(TDBOEmitirFlow::class)
-class TDBOEmitirFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
+class TDBOEmitirFlowResponder(val flowSession: FlowSession): FlowLogic<SignedTransaction>() {
     @Suspendable
-    override fun call() {
-        val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
+    override fun call() : SignedTransaction {
+        val flujoTransaccionFirmada = object : SignTransactionFlow(flowSession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs.single().data
-                "This must be an IOU transaction" using (output is EstadoTDBO)
+                "Esta debe de ser una transacción de TDBO" using (output is EstadoTDBO)
             }
         }
-        subFlow(signedTransactionFlow)
+        val txQueAcabamosDeFirmar = subFlow(flujoTransaccionFirmada)
+        return subFlow(ReceiveFinalityFlow(otherSideSession = flowSession, expectedTxId = txQueAcabamosDeFirmar.id))
+
     }
 }

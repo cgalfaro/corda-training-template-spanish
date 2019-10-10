@@ -12,6 +12,7 @@ import net.corda.testing.node.*
 import net.corda.training.contract.ContratoTDBO
 import net.corda.training.state.EstadoTDBO
 import org.junit.*
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
@@ -60,6 +61,7 @@ class TDBOEmitirFlowTests {
      * - Puntos extras: Utilice [TransactionBuilder.withItems] para crear la transacción.
      * - Firme la transacción y convértala a una [SignedTransaction] usando el método [serviceHub.signInitialTransaction].
      * - Devuelva la [SignedTransaction].
+     * Consejo: ptx representa una transacción parcialmente firmada.
      */
     @Test
     fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
@@ -119,64 +121,66 @@ class TDBOEmitirFlowTests {
      * TODO: Agregar al [TDBOEmitirFlow] para recolectar la firma de [otherParty] (otro participante).
      * Consejo:
      * Del lado del inicador:
-     * - Get a set of signers required from the participants who are not the node
-     * - - [ourIdentity] will give you the identity of the node you are operating as
-     * - Use [initiateFlow] to get a set of [FlowSession] objects
-     * - - Using [state.participants] as a base to determine the sessions needed is recommended. [participants] is on
-     * - - the state interface so it is guaranteed to exist where [lender] and [borrower] are not.
-     * - - Hint: [ourIdentity] will give you the [Party] that represents the identity of the initiating flow.
-     * - Use [subFlow] to start the [CollectSignaturesFlow]
-     * - Pass it a [SignedTransaction] object and [FlowSession] set
-     * - It will return a [SignedTransaction] with all the required signatures
-     * - The subflow performs the signature checking and transaction verification for you
+     * - Obten el set de firmantes requeridos de los participantes que no están en el nodo.
+     * - - [ourIdentity] brindará la identidad del nodo del cual estas operando
+     * - Usa [initiateFlow] para obtener un set de objetos [FlowSession]
+     * - - Es recomendado usar [state.participants] como base para determinar las sesiones necesarias. [participants] Está en
+     * - - la interface del estado por lo tanto está garantizado que exista donde [prestamista] y [deudor] no estén.
+     * - - Consejo: [ourIdentity] te devolverá el [Party] que representa la identidad del flujo iniciante.
+     * - Use [subFlow] para iniciar [CollectSignaturesFlow]
+     * - Pásale un objeto [SignedTransaction] y un set de [FlowSession]
+     * - Devolverá una [SignedTransaction] con todas las firmas requeridas
+     * - El subflow ejecuta el chequeo de firmas y la verificación de la transacción por nosotros.
      *
-     * On the Responder side:
-     * - Create a subclass of [SignTransactionFlow]
-     * - Override [SignTransactionFlow.checkTransaction] to impose any constraints on the transaction
+     * Del lado del que responde:
+     * - Creee una subclase de [SignTransactionFlow]
+     * - Override [SignTransactionFlow.checkTransaction] para imponer restricciones en la transacción
      *
-     * Using this flow you abstract away all the back-and-forth communication required for parties to sign a
-     * transaction.
+     * Usando este flujo reduces toda la comunicación de ida y venida requerida para que las partes firmen una
+     * transaccción.
+     * Consejo: stx representa una transacción firmada por todas las partes
      */
-//    @Test
-//    fun flowReturnsTransactionSignedByBothParties() {
-//        val lender = a.info.chooseIdentityAndCert().party
-//        val borrower = b.info.chooseIdentityAndCert().party
-//        val iou = IOUState(10.POUNDS, lender, borrower)
-//        val flow = IOUIssueFlow(iou)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        val stx = future.getOrThrow()
-//        stx.verifyRequiredSignatures()
-//    }
+    @Test
+    fun flowReturnsTransactionSignedByBothParties() {
+        val prestamista = a.info.chooseIdentityAndCert().party
+        val deudor = b.info.chooseIdentityAndCert().party
+        val tdbo = EstadoTDBO(10.POUNDS, prestamista, deudor)
+        val flujo = TDBOEmitirFlow(tdbo)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        val stx = futuro.getOrThrow()
+        stx.verifyRequiredSignatures()
+    }
 
     /**
-     * Task 4.
-     * Now we need to store the finished [SignedTransaction] in both counter-party vaults.
-     * TODO: Amend the [TDBOEmitirFlow] by adding a call to [FinalityFlow].
-     * Hint:
-     * - As mentioned above, use the [FinalityFlow] to ensure the transaction is recorded in both [Party] vaults.
-     * - Do not use the [BroadcastTransactionFlow]!
-     * - The [FinalityFlow] determines if the transaction requires notarisation or not.
-     * - We don't need the notary's signature as this is an issuance transaction without a timestamp. There are no
-     *   inputs in the transaction that could be double spent! If we added a timestamp to this transaction then we
-     *   would require the notary's signature as notaries act as a timestamping authority.
+     * Tarea 4.
+     * Ahora necesitamos almacenar la [SignedTransaction] terminada en las bovedas de ambos participantes.
+     * TODO: Modificar el  [TDBOEmitirFlow] agregando una llamada al [FinalityFlow].
+     * Consejo:
+     * - Como lo mencionamos anteriormente, use el [FinalityFlow] para asegurar que la transacción sea almacenada en las
+     *  bóvedas de ambos participantes ([Party]).
+     * - No utilice el [BroadcastTransactionFlow]! Este es llamado por medio del [FinalityFlow].
+     * - El [FinalityFlow] determina si la transacción requiere notarización o no.
+     * - En este caso no necesitamos de la firma del notario ya que esto es una transacción de emision sin timestamp. No hay
+     *   entradas en la transacción que puedan ser gastadas dos veces (double spent)! Si agregaramos un timestamp a esta transacción
+     *   entonces requeriríamos la firma del notario ya que los notarios actúan como la autoridad del timestamp.
      */
-//    @Test
-//    fun flowRecordsTheSameTransactionInBothPartyVaults() {
-//        val lender = a.info.chooseIdentityAndCert().party
-//        val borrower = b.info.chooseIdentityAndCert().party
-//        val iou = IOUState(10.POUNDS, lender, borrower)
-//        val flow = IOUIssueFlow(iou)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        val stx = future.getOrThrow()
-//        println("Signed transaction hash: ${stx.id}")
-//        listOf(a, b).map {
-//            it.services.validatedTransactions.getTransaction(stx.id)
-//        }.forEach {
-//                    val txHash = (it as SignedTransaction).id
-//                    println("$txHash == ${stx.id}")
-//                    assertEquals(stx.id, txHash)
-//                }
-//    }
+    @Test
+    fun flowRecordsTheSameTransactionInBothPartyVaults() {
+        val prestamista = a.info.chooseIdentityAndCert().party
+        val deudor = b.info.chooseIdentityAndCert().party
+        val tdbo = EstadoTDBO(10.POUNDS, prestamista, deudor)
+        val flujo = TDBOEmitirFlow(tdbo)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        val stx = futuro.getOrThrow()
+        println("Hash de transacción firmada: ${stx.id}")
+        listOf(a, b).map {
+            it.services.validatedTransactions.getTransaction(stx.id)
+        }.forEach {
+                    val txHash = (it as SignedTransaction).id
+                    println("$txHash == ${stx.id}")
+                    assertEquals(stx.id, txHash)
+                }
+    }
 }
