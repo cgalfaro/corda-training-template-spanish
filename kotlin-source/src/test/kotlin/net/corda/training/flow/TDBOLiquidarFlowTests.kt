@@ -20,6 +20,7 @@ import net.corda.training.contract.ContratoTDBO
 import org.junit.*
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 /**
  * Instrucciones para ejercicio práctico de flujos parte 3.
@@ -124,92 +125,92 @@ class TDBOLiquidarFlowTests {
     }
 
     /**
-     * Task 2.
-     * Only the borrower should be running this flow for a particular IOU.
-     * TODO: Grab the IOU for the given [linearId] from the vault and check the node running the flow is the borrower.
-     * Hint: Use the data within the iou obtained from the vault to check the right node is running the flow.
+     * Tarea 2.
+     * Solo el deudor debería de ejecutar este flujo para un TDBO en particular.
+     * TODO: Obten el TDBO de la boveda con el [linearId] entregado y revisa que el nodo ejecutando el flujo sea el deudor.
+     * Consejo: Utiliza la data obtenida de la bóveda para revisar que el nodo correcto esté ejecutando el flujo.
      */
-//    @Test
-//    fun settleFlowCanOnlyBeRunByBorrower() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        issueCash(5.POUNDS)
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = b.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        assertFailsWith<IllegalArgumentException> { future.getOrThrow() }
-//    }
+    @Test
+    fun settleFlowCanOnlyBeRunByBorrower() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        issueCash(5.POUNDS)
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = b.startFlow(flujo)
+        mockNetwork.runNetwork()
+        assertFailsWith<IllegalArgumentException> { futuro.getOrThrow() }
+    }
 
     /**
-     * Task 3.
-     * The borrower must have at least SOME cash in the right currency to pay the lender.
-     * TODO: Add a check in the flow to ensure that the borrower has a balance of cash in the right currency.
-     * Hint:
-     * - Use [serviceHub.getCashBalances] - it is a map which can be queried by [Currency].
-     * - Use an if statement to check there is cash in the right currency present.
+     * Tarea 3.
+     * El deudor debe tener al menos ALGO de cash en la moneda correcta para pagar al prestamista.
+     * TODO: Agrega una comprobación al flujo para asegurarnos que el deudor tiene cash en la moneda correcta.
+     * Consejo:
+     * - Usa [serviceHub.getCashBalances] - es un mapa que puede ser consultado por [Currency].
+     * - Use una declaración if para comprobar que hay cash en la moneda correcta.
      */
-//    @Test
-//    fun borrowerMustHaveCashInRightCurrency() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        assertFailsWith<IllegalArgumentException>("Borrower has no GBP to settle.") { future.getOrThrow() }
-//    }
+    @Test
+    fun borrowerMustHaveCashInRightCurrency() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        assertFailsWith<IllegalArgumentException>("Deudor no tiene GBP para liquidar.") { futuro.getOrThrow() }
+    }
 
     /**
-     * Task 4.
-     * The borrower must have enough cash in the right currency to pay the lender.
-     * TODO: Add a check in the flow to ensure that the borrower has enough cash to pay the lender.
-     * Hint: Add another if statement similar to the one required above.
+     * Tarea 4.
+     * El deudor debe tener suficiente cash en la moneda correcta para pagar al prestamista.
+     * TODO: Agrega una comprobación al flujo que asegure que el deudor tiene suficiente cash para pagar al prestamista.
+     * Consejo: Agregue otra declaración if similar a la requerida anteriormente.
      */
-//    @Test
-//    fun borrowerMustHaveEnoughCashInRightCurrency() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        issueCash(1.POUNDS)
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        assertFailsWith<IllegalArgumentException>("Borrower has only 1.00 GBP but needs 5.00 GBP to settle.") { future.getOrThrow() }
-//    }
+    @Test
+    fun borrowerMustHaveEnoughCashInRightCurrency() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        issueCash(1.POUNDS)
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        assertFailsWith<IllegalArgumentException>("Deudor únicamente tiene 1.00 GBP pero necesita 5.00 GBP para liquidar.") { futuro.getOrThrow() }
+    }
 
     /**
-     * Task 5.
-     * We need to get the transaction signed by the other party.
-     * TODO: Use a subFlow call to [initateFlow] and the [SignTransactionFlow] to get a signature from the lender.
+     * Tarea 5.
+     * Necesitamos que la transacción sea firmada por el otro participante.
+     * TODO: Use una llamada subFlow para [initateFlow] y el [SignTransactionFlow] para obtener la firma del prestamista.
      */
-//    @Test
-//    fun flowReturnsTransactionSignedByBothParties() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        issueCash(5.POUNDS)
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        val settleResult = future.getOrThrow()
-//        // Check the transaction is well formed...
-//        // One output IOUState, one input IOUState reference, input and output cash
-//        settleResult.verifySignaturesExcept(mockNetwork.defaultNotaryNode.info.legalIdentitiesAndCerts.first().owningKey)
-//    }
+    @Test
+    fun flowReturnsTransactionSignedByBothParties() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        issueCash(5.POUNDS)
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        val resultadoDeLiquidacion = futuro.getOrThrow()
+        // Comprueba que la transacción está bien formada
+        // Un EstadoTDBO de salida, una referencia a un EstadoTDBO de entrada, cash de entrada y salida
+        resultadoDeLiquidacion.verifySignaturesExcept(mockNetwork.defaultNotaryNode.info.legalIdentitiesAndCerts.first().owningKey)
+    }
 
     /**
-     * Task 6.
-     * We need to get the transaction signed by the notary service
-     * TODO: Use a subFlow call to the [FinalityFlow] to get a signature from the lender.
+     * Tarea 6.
+     * Necesitamos obtener las transacción firmada por el servicio de notario
+     * TODO: Use una llamada subFlow al [FinalityFlow] para obtener la firma del notario.
      */
-//    @Test
-//    fun flowReturnsCommittedTransaction() {
-//        val stx = issueIou(IOUState(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-//        issueCash(5.POUNDS)
-//        val inputIou = stx.tx.outputs.single().data as IOUState
-//        val flow = IOUSettleFlow(inputIou.linearId, 5.POUNDS)
-//        val future = a.startFlow(flow)
-//        mockNetwork.runNetwork()
-//        val settleResult = future.getOrThrow()
-//        // Check the transaction is well formed...
-//        // One output IOUState, one input IOUState reference, input and output cash
-//        settleResult.verifyRequiredSignatures()
-//    }
+    @Test
+    fun flowReturnsCommittedTransaction() {
+        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        issueCash(5.POUNDS)
+        val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
+        val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
+        val futuro = a.startFlow(flujo)
+        mockNetwork.runNetwork()
+        val resultadoDeLiquidacion = futuro.getOrThrow()
+        // Comprueba que la transacción está bien formada
+        // Un EstadoTDBO de salida, una referencia a un EstadoTDBO de entrada, cash de entrada y salida
+        resultadoDeLiquidacion.verifyRequiredSignatures()
+    }
 }

@@ -1,22 +1,21 @@
 package net.corda.training.flow
 
 import co.paralleluniverse.fibers.Suspendable
+import net.corda.confidential.IdentitySyncFlow
 import net.corda.core.contracts.Amount
+import net.corda.core.contracts.Command
 import net.corda.core.contracts.UniqueIdentifier
-import net.corda.core.contracts.requireThat
-import net.corda.core.flows.CollectSignaturesFlow
-import net.corda.core.flows.FinalityFlow
-import net.corda.core.flows.FlowLogic
-import net.corda.core.flows.FlowSession
-import net.corda.core.flows.InitiatedBy
-import net.corda.core.flows.InitiatingFlow
-import net.corda.core.flows.SignTransactionFlow
-import net.corda.core.flows.StartableByRPC
+import net.corda.core.flows.*
+import net.corda.core.node.services.queryBy
+import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.OpaqueBytes
 import net.corda.finance.contracts.asset.Cash
 import net.corda.finance.flows.CashIssueFlow
+import net.corda.finance.workflows.asset.CashUtils
+import net.corda.finance.workflows.getCashBalance
+import net.corda.training.contract.ContratoTDBO
 import net.corda.training.state.EstadoTDBO
 import java.util.*
 
@@ -28,13 +27,72 @@ import java.util.*
  */
 @InitiatingFlow
 @StartableByRPC
-class TDBOLiquidarFlow(val linearId: UniqueIdentifier, val amount: Amount<Currency>): FlowLogic<SignedTransaction>() {
+class TDBOLiquidarFlow(val linearId: UniqueIdentifier, val cantidadAPagar: Amount<Currency>): FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call(): SignedTransaction {
         // Codigo por defecto para evitar problemas al ejecutar los unit tests. ¡Remover antes de comenzar las tareas de flujos!
-        return serviceHub.signInitialTransaction(
-                TransactionBuilder(notary = null)
-        )
+//        return serviceHub.signInitialTransaction(
+//                TransactionBuilder(notary = null)
+//        )
+
+        // Paso 1. Obtener el EstadoTDBO de la bóveda.
+        val criterioDeBusqueda = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))
+        val tdboALiquidar = serviceHub.vaultService.queryBy<EstadoTDBO>(criterioDeBusqueda).states.single()
+        val contraParte = tdboALiquidar.state.data.prestamista
+
+        // Paso 2. Comprueba que el participante que inicia este flujo sea el deudor.
+        if (ourIdentity != tdboALiquidar.state.data.deudor) {
+            throw IllegalArgumentException("La liquidación de un TDBO debe ser iniciada por el deudor.")
+        }
+
+        // Paso 3. Crea el constructor de la transacción.
+        val notario = tdboALiquidar.state.notary
+        val constructorDeTransaccion = TransactionBuilder(notary = notario)
+
+        // Paso 4. Revisa que el deudor tiene suficiente dinero para liquidar el monto seleccionado
+        val balanceDeDinero = serviceHub.getCashBalance(cantidadAPagar.token)
+
+        if (balanceDeDinero < cantidadAPagar) {
+            throw IllegalArgumentException("Deudor únicamente tiene $balanceDeDinero pero necesita $cantidadAPagar para liquidar.")
+        } else if (cantidadAPagar > (tdboALiquidar.state.data.cantidad - tdboALiquidar.state.data.pagado)) {
+            throw IllegalArgumentException("Deduor intentó liquidar con $cantidadAPagar pero solo necesita " +
+                    "${ (tdboALiquidar.state.data.cantidad - tdboALiquidar.state.data.pagado) }")
+        }
+
+        // Paso 5. Obtener cash de la bóveda y agregar el gasto al contrsuctor de transacción.
+        // La bóveda puede contener estados "que pertenecen a (owned)" participantes anónimos. Esta es una de las técnicas para anonimizar transacciones
+        // generateSpend devuelve todas las llaves públicas que deben ser utilizadas para firmar la transacción.
+        val (_, llavesCash) = CashUtils.generateSpend(serviceHub, constructorDeTransaccion, cantidadAPagar, ourIdentityAndCert, contraParte)
+
+        // Paso 6. Agrega el EstadoTDBO de entrada y el comando liquidar al constructor de la transacción.
+        val comandoLiquidar = Command(ContratoTDBO.Commands.Liquidar(), listOf(contraParte.owningKey, ourIdentity.owningKey))
+        constructorDeTransaccion.addCommand(comandoLiquidar)
+        constructorDeTransaccion.addInputState(tdboALiquidar)
+
+        // Paso 7. Solo agrega un EstadoTDBO de salida si el TDBO no se ha liquidado completamente.
+        val cantidadRemanente = tdboALiquidar.state.data.cantidad - tdboALiquidar.state.data.pagado - cantidadAPagar
+        if (cantidadRemanente > Amount(0, cantidadAPagar.token)) {
+            val tdboPagado: EstadoTDBO = tdboALiquidar.state.data.pagar(cantidadAPagar)
+            constructorDeTransaccion.addOutputState(tdboPagado, ContratoTDBO.TDBO_CONTRACT_ID)
+        }
+
+        // Paso 8. Verificar y firmar la transacción.
+        constructorDeTransaccion.verify(serviceHub)
+        // Necesitamos firmar la transacción con todas las llaves de los estados cash de entrada y nuestra llave publica
+        val misLLavesParaFirmar = (llavesCash.toSet() + ourIdentity.owningKey).toList()
+        val ptx = serviceHub.signInitialTransaction(constructorDeTransaccion, misLLavesParaFirmar)
+
+        // Iniciando sesión con el otro participante
+        val sesionContraparte = initiateFlow(contraParte)
+
+        // Enviando a la contraparte nuestras identidades para que estén atentos de llaves publicas anonimas
+        subFlow(IdentitySyncFlow.Send(sesionContraparte, ptx.tx))
+
+        // Paso 9. Recolectando las firmas que hacen falta
+        val stx = subFlow(CollectSignaturesFlow(ptx, listOf(sesionContraparte), myOptionalKeys = misLLavesParaFirmar))
+
+        // Paso 10. Finalizar la transacción
+        return subFlow(FinalityFlow(stx, sesionContraparte))
     }
 }
 
@@ -43,17 +101,22 @@ class TDBOLiquidarFlow(val linearId: UniqueIdentifier, val amount: Amount<Curren
  * La firma es manejada por el [SignTransactionFlow].
  */
 @InitiatedBy(TDBOLiquidarFlow::class)
-class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<Unit>() {
+class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<SignedTransaction>() {
     @Suspendable
-    override fun call() {
-        val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
-            override fun checkTransaction(stx: SignedTransaction) = requireThat {
-                val outputStates = stx.tx.outputs.map { it.data::class.java.name }.toList()
-                "There must be an IOU transaction." using (outputStates.contains(EstadoTDBO::class.java.name))
+    override fun call() : SignedTransaction {
+
+        // Recibiendo informacion de identidades anónimas
+        subFlow(IdentitySyncFlow.Receive(flowSession))
+
+        // Firmando la transacción
+        val flowDeTransaccionFirmada = object : SignTransactionFlow(flowSession) {
+            override fun checkTransaction(stx: SignedTransaction) {
             }
         }
 
-        subFlow(signedTransactionFlow)
+        val txQueAcabamosDeFirmar = subFlow(flowDeTransaccionFirmada)
+
+        return subFlow(ReceiveFinalityFlow(otherSideSession = flowSession, expectedTxId = txQueAcabamosDeFirmar.id))
     }
 }
 
