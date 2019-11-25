@@ -54,7 +54,7 @@ class TDBOLiquidarFlowTests {
     /**
      * Emitir un TDBO en el libro mayor, necesitamos hacer esto antes de transferir uno.
      */
-    private fun issueIou(iou: EstadoTDBO): SignedTransaction {
+    private fun emitirTDBO(iou: EstadoTDBO): SignedTransaction {
         val flow = TDBOEmitirFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
@@ -64,7 +64,7 @@ class TDBOLiquidarFlowTests {
     /**
      * Emitir un poco de cash en el libro mayor para nosotros, necesitamos esto antes de poder liquidar un TDBO.
      */
-    private fun issueCash(amount: Amount<Currency>): Cash.State {
+    private fun emitirCash(amount: Amount<Currency>): Cash.State {
         val flow = SelfIssueCashFlow(amount)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
@@ -86,9 +86,9 @@ class TDBOLiquidarFlowTests {
      * - Firma la transacción y devuélvela.
      */
     @Test
-    fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-        issueCash(5.POUNDS)
+    fun flowDevuelveTransaccionParcialmenteFirmadaCorrectamenteFormada() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        emitirCash(5.POUNDS)
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = a.startFlow(flujo)
@@ -131,9 +131,9 @@ class TDBOLiquidarFlowTests {
      * Consejo: Utiliza la data obtenida de la bóveda para revisar que el nodo correcto esté ejecutando el flujo.
      */
     @Test
-    fun settleFlowCanOnlyBeRunByBorrower() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-        issueCash(5.POUNDS)
+    fun flowEmitirSoloPuedeSerEjecutadoPorDeudor() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        emitirCash(5.POUNDS)
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = b.startFlow(flujo)
@@ -150,8 +150,8 @@ class TDBOLiquidarFlowTests {
      * - Use una declaración if para comprobar que hay cash en la moneda correcta.
      */
     @Test
-    fun borrowerMustHaveCashInRightCurrency() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+    fun deudorDebeTenerCashEnMonedaCorrecta() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = a.startFlow(flujo)
@@ -166,9 +166,9 @@ class TDBOLiquidarFlowTests {
      * Consejo: Agregue otra declaración if similar a la requerida anteriormente.
      */
     @Test
-    fun borrowerMustHaveEnoughCashInRightCurrency() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-        issueCash(1.POUNDS)
+    fun deudorDebeTenerSuficienteCashEnMonedaCorrecta() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        emitirCash(1.POUNDS)
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = a.startFlow(flujo)
@@ -182,9 +182,9 @@ class TDBOLiquidarFlowTests {
      * TODO: Use una llamada subFlow para [initateFlow] y el [SignTransactionFlow] para obtener la firma del prestamista.
      */
     @Test
-    fun flowReturnsTransactionSignedByBothParties() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-        issueCash(5.POUNDS)
+    fun flowDevuelveTransaccionFirmadaPorLosDosParticipantes() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        emitirCash(5.POUNDS)
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = a.startFlow(flujo)
@@ -201,9 +201,9 @@ class TDBOLiquidarFlowTests {
      * TODO: Use una llamada subFlow al [FinalityFlow] para obtener la firma del notario.
      */
     @Test
-    fun flowReturnsCommittedTransaction() {
-        val stx = issueIou(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
-        issueCash(5.POUNDS)
+    fun flowDevuelveUnaTransaccionCometida() {
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, b.info.chooseIdentityAndCert().party, a.info.chooseIdentityAndCert().party))
+        emitirCash(5.POUNDS)
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOLiquidarFlow(tdboEntrada.linearId, 5.POUNDS)
         val futuro = a.startFlow(flujo)

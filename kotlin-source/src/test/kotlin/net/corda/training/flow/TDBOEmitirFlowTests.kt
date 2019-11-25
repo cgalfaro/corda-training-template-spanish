@@ -64,7 +64,7 @@ class TDBOEmitirFlowTests {
      * Consejo: ptx representa una transacción parcialmente firmada.
      */
     @Test
-    fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
+    fun flowDevuelveTransaccionParcialmenteFirmadaCrrectamenteFormada() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
         val tdbo = EstadoTDBO(10.POUNDS, prestamista, deudor)
@@ -94,7 +94,7 @@ class TDBOEmitirFlowTests {
      * puedes confirmar la transacción antes de hacerla inmutable con la firma.
      */
     @Test
-    fun flowReturnsVerifiedPartiallySignedTransaction() {
+    fun flowDevuelveTransaccionParcialmenteFirmadaVerificada() {
         // Prueba con un TDBO de cantidad 0 falla.
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
@@ -141,7 +141,7 @@ class TDBOEmitirFlowTests {
      * Consejo: stx representa una transacción firmada por todas las partes
      */
     @Test
-    fun flowReturnsTransactionSignedByBothParties() {
+    fun flowDevuelveTransaccionFirmadaPorAmbosParticipantes() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
         val tdbo = EstadoTDBO(10.POUNDS, prestamista, deudor)
@@ -166,7 +166,7 @@ class TDBOEmitirFlowTests {
      *   entonces requeriríamos la firma del notario ya que los notarios actúan como la autoridad del timestamp.
      */
     @Test
-    fun flowRecordsTheSameTransactionInBothPartyVaults() {
+    fun flowDevuelveLaMismaTransaccionEnLaBovedaDeAmbosParticipantes() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
         val tdbo = EstadoTDBO(10.POUNDS, prestamista, deudor)

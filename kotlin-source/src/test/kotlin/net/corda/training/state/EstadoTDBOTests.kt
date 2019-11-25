@@ -14,16 +14,16 @@ import kotlin.test.assertNotEquals
 
 /**
  * Instrucciones de ejercicio práctico.
- * Descomenta el primer unit test [hasIOUAmountFieldOfCorrectType] y luego ejecuta el unit test con la flecha verde
- * a la izquierda de la clase [IOUStateTests] o el método [hasIOUAmountFieldOfCorrectType].
- * Ejecutando las pruebas desde [IOUStateTests] ejecuta todos los unit tests definidos en la clase.
+ * Descomenta el primer unit test [tieneCampoCantidadTDBODelTipoCorrecto] y luego ejecuta el unit test con la flecha verde
+ * a la izquierda de la clase [EstadoTDBOTests] o el método [tieneCampoCantidadTDBODelTipoCorrecto].
+ * Ejecutando las pruebas desde [EstadoTDBOTests] ejecuta todos los unit tests definidos en la clase.
  * La primera prueba debería de fallar por que necesitas hacer algunos cambios al EstadoTDBO para que pase. Lea el TODO
  * bajo cada número de tarea para una descripción y un concejo de que es necesario hacer.
  * Una vez hayas la prueba pase, descomenta la siguiente prueba.
  * Continúa con todas las pruebas hasta que todas pasen.
  * Consejo: CMD / Ctrl + en los nombres color café en corchetes "[]" para su definición en el código base.
  */
-class IOUStateTests {
+class EstadoTDBOTests {
 
     /**
      * Tarea 1.
@@ -32,7 +32,7 @@ class IOUStateTests {
      * Como estamos lidiando con dinero prestado de un participante a otro hace sentioo que nuestro token sea [Currency].
      */
     @Test
-    fun hasIOUAmountFieldOfCorrectType() {
+    fun tieneCampoCantidadTDBODelTipoCorrecto() {
         // Does the amount field exist?
         EstadoTDBO::class.java.getDeclaredField("cantidad")
         // Is the amount field of the correct type?
@@ -44,7 +44,7 @@ class IOUStateTests {
      * TODO: Agregar 'prestamista' del tipo [Party] a la clase [EstadoTDBO] para que esta prueba pase.
      */
     @Test
-    fun hasLenderFieldOfCorrectType() {
+    fun tieneCampoPrestamistaDelTipoCorrecto() {
         // Does the lender field exist?
         EstadoTDBO::class.java.getDeclaredField("prestamista")
         // Is the lender field of the correct type?
@@ -56,7 +56,7 @@ class IOUStateTests {
      * TODO: Agregar 'deudor' de tipo [Party] a la clase [EstadoTDBO] para que esta prueba pase.
      */
     @Test
-    fun hasBorrowerFieldOfCorrectType() {
+    fun tieneCampoDeudorDelTipoCorrecto() {
         // Does the borrower field exist?
         EstadoTDBO::class.java.getDeclaredField("deudor")
         // Is the borrower field of the correct type?
@@ -79,7 +79,7 @@ class IOUStateTests {
      *   representando la moneda - que deberia ser la misma moneda que la propiedad [EstadoTDBO.amount].
      */
     @Test
-    fun hasPaidFieldOfCorrectType() {
+    fun tieneCampoPagadoDelTipoCorrecto() {
         // Does the paid field exist?
         EstadoTDBO::class.java.getDeclaredField("pagado")
         // Is the paid field of the correct type?
@@ -92,7 +92,7 @@ class IOUStateTests {
      * Consejo: [listOf] toma cualquier numero de parametros y los agrega a la lista
      */
     @Test
-    fun lenderIsParticipant() {
+    fun prestamistaEsParticipante() {
         val estadoTdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         assertNotEquals(estadoTdbo.participants.indexOf(ALICE.party), -1)
     }
@@ -102,7 +102,7 @@ class IOUStateTests {
      * TODO: Similar a la tarea anterior, incluya al deudor en la lista [EstadoTDBO.participants]
      */
     @Test
-    fun borrowerIsParticipant() {
+    fun deudorEsParticipante() {
         val estadoTdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         assertNotEquals(estadoTdbo.participants.indexOf(BOB.party), -1)
     }
@@ -115,7 +115,7 @@ class IOUStateTests {
      * de [LinearState] para ver que es requerido añadir.
      */
     @Test
-    fun isLinearState() {
+    fun esLinearState() {
         assert(LinearState::class.java.isAssignableFrom(EstadoTDBO::class.java))
     }
 
@@ -131,7 +131,7 @@ class IOUStateTests {
      * - Provee un valor por defecto para el [linearId] para un nuevo [EstadoTDBO]
      */
     @Test
-    fun hasLinearIdFieldOfCorrectType() {
+    fun tieneCampoLinearIdFieldDeTipoCorrecto() {
         // Does the linearId field exist?
         EstadoTDBO::class.java.getDeclaredField("linearId")
         // Is the linearId field of the correct type?
@@ -145,7 +145,7 @@ class IOUStateTests {
      * confusión en las tareas mas adelante!
      */
     @Test
-    fun checkIOUStateParameterOrdering() {
+    fun compruebaEstadoTDBOOrdenParametros() {
         val fields = EstadoTDBO::class.java.declaredFields
         val amountIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("cantidad"))
         val lenderIdx = fields.indexOf(EstadoTDBO::class.java.getDeclaredField("prestamista"))
@@ -170,7 +170,7 @@ class IOUStateTests {
      * - [copy] devuelve una copia de la instancia del objeto y los campos pueden ser cambiados escpecificando los nuevos valores
      * como parametros de [copy]     */
     @Test
-    fun checkPayHelperMethod() {
+    fun compruebaMetodoAyudaPagar() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         assertEquals(5.DOLLARS, tdbo.pagar(5.DOLLARS).pagado)
         assertEquals(3.DOLLARS, tdbo.pagar(1.DOLLARS).pagar(2.DOLLARS).pagado)
@@ -182,7 +182,7 @@ class IOUStateTests {
      * TODO: Agregar metodo de ayuda [conNuevoPrestamista] que pueda ser llamado desde [EstadoTDBO] para cambiar el prestamista del TDBO.
      */
     @Test
-    fun checkWithNewLenderHelperMethod() {
+    fun compurbeTieneMetodoAyudaNuevoPrestamista() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         assertEquals(MINICORP.party, tdbo.conNuevoPrestamista(MINICORP.party).prestamista)
         assertEquals(MEGACORP.party, tdbo.conNuevoPrestamista(MEGACORP.party).prestamista)

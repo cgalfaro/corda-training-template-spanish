@@ -50,7 +50,7 @@ class TDBOTransferirFlowTests {
     /**
      * Emitir un TDBO en el libro mayor, necesitamos hacer esto antes de transferir uno.
      */
-    private fun issueIou(iou: EstadoTDBO): SignedTransaction {
+    private fun emitirTDBO(iou: EstadoTDBO): SignedTransaction {
         val flow = TDBOEmitirFlow(iou)
         val future = a.startFlow(flow)
         mockNetwork.runNetwork()
@@ -76,10 +76,10 @@ class TDBOTransferirFlowTests {
      * - Devuelva la transacción parcialmente firmada.
      */
     @Test
-    fun flowReturnsCorrectlyFormedPartiallySignedTransaction() {
+    fun flowDevuelveTransaccionParcialmenteFirmadaBienFormada() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
-        val stx = issueIou(EstadoTDBO(10.POUNDS, prestamista, deudor))
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, prestamista, deudor))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOTransferirFlow(tdboEntrada.linearId, c.info.chooseIdentityAndCert().party)
         val futuro = a.startFlow(flujo)
@@ -109,10 +109,10 @@ class TDBOTransferirFlowTests {
      * - Lanza un [IllegalArgumentException] si el participante [Party] intenta ejecutar el flujo!
      */
     @Test
-    fun flowCanOnlyBeRunByCurrentLender() {
+    fun flowPuedeSerEjecutadoSoloPorPrestamistaActual() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
-        val stx = issueIou(EstadoTDBO(10.POUNDS, prestamista, deudor))
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, prestamista, deudor))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOTransferirFlow(tdboEntrada.linearId, c.info.chooseIdentityAndCert().party)
         val futuro = b.startFlow(flujo)
@@ -126,10 +126,10 @@ class TDBOTransferirFlowTests {
      * TODO: No deberías de hacer nada adicional para que esta prueba pase. ¡Agárrate los Pantalones!
      */
     @Test
-    fun iouCannotBeTransferredToSameParty() {
+    fun tdboNoPuedeSerTransferidoAlMismoParticipante() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
-        val stx = issueIou(EstadoTDBO(10.POUNDS, prestamista, deudor))
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, prestamista, deudor))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOTransferirFlow(tdboEntrada.linearId, prestamista)
         val future = a.startFlow(flujo)
@@ -145,10 +145,10 @@ class TDBOTransferirFlowTests {
      * Consejo: Usa [initiateFlow] y el [CollectSignaturesFlow] de la misma manera que en [TDBOEmitirFlow].
      */
     @Test
-    fun flowReturnsTransactionSignedByAllParties() {
+    fun flowDevuelveTransaccionFirmadaPorTodasLasPartes() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
-        val stx = issueIou(EstadoTDBO(10.POUNDS, prestamista, deudor))
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, prestamista, deudor))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOTransferirFlow(tdboEntrada.linearId, c.info.chooseIdentityAndCert().party)
         val futuro = a.startFlow(flujo)
@@ -162,10 +162,10 @@ class TDBOTransferirFlowTests {
      * TODO: Use una llamada de subFlow al [FinalityFlow] para obtener la firma del notario.
      */
     @Test
-    fun flowReturnsTransactionSignedByAllPartiesAndNotary() {
+    fun flowDevuelveTransaccionFirmadaPorTodasLasPartesYNotario() {
         val prestamista = a.info.chooseIdentityAndCert().party
         val deudor = b.info.chooseIdentityAndCert().party
-        val stx = issueIou(EstadoTDBO(10.POUNDS, prestamista, deudor))
+        val stx = emitirTDBO(EstadoTDBO(10.POUNDS, prestamista, deudor))
         val tdboEntrada = stx.tx.outputs.single().data as EstadoTDBO
         val flujo = TDBOTransferirFlow(tdboEntrada.linearId, c.info.chooseIdentityAndCert().party)
         val futuro = a.startFlow(flujo)

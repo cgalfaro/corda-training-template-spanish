@@ -22,10 +22,10 @@ import org.junit.Test
 /**
  * Instrucciones para ejercicio práctico de Contratos parte 2.
  * El objetivo es escribir codigo de contrato que verifique una transacción para transferir un [EstadoTDBO].
- * Como con las puebas de [IOUIssueTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición de las pruebas y
+ * Como con las puebas de [TDBOEmitirTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición de las pruebas y
  * la descripción de cada tarea para determinar como pasar las pruebas.
  */
-class IOUTransferTests {
+class TDBOTransferirTests {
     // Un estado de prueba pre-hecho que podemos necesitar en algunas pruebas.
     class DummyState : ContractState {
         override val participants: List<AbstractParty> get() = listOf()
@@ -65,7 +65,7 @@ class IOUTransferTests {
      * - La funcion [requireSingleCommand] manejará los tipos de comandos desconocidos. (mira la primera prueba).
      */
     @Test
-    fun mustHandleMultipleCommandValues() {
+    fun debeManejarValoresDeMultiplesComandos() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -95,7 +95,7 @@ class IOUTransferTests {
      * - Mira el codigo de contrato para "Emitir".
      */
     @Test
-    fun mustHaveOneInputAndOneOutput() {
+    fun debeTenerUnaEntradaYUnaSalida() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -143,7 +143,7 @@ class IOUTransferTests {
      *   no hayan cambiado, incluyendo el [linearId] y el [contracto]!
      */
     @Test
-    fun onlyTheLenderMayChange() {
+    fun soloElPrestamistaPuedeCambiar() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -179,7 +179,7 @@ class IOUTransferTests {
      * TODO: Agregar una restriccion para comprobar que el prestamista haya cambiado en el TDBO de salida.
      */
     @Test
-    fun theLenderMustChange() {
+    fun elPrestamistaTieneQueCambiar() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -203,7 +203,7 @@ class IOUTransferTests {
      * TODO: Agrega una restricción para revisar que el prestamista anterior, el nuevo prestamista y el deudor hayan firmado.
      */
     @Test
-    fun allParticipantsMustSign() {
+    fun todosLosParticipantesDebenFirmar() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {

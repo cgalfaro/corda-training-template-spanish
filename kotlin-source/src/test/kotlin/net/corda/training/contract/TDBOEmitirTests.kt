@@ -18,7 +18,7 @@ import org.junit.*
  * Como con [IOUStateTests] descomenta cada unit test y ejecutalo uno a la vez. Utiliza la definición de las pruebas y
  * la descripción de cada tarea para determinar como pasar las pruebas.
  */
-class IOUIssueTests {
+class TDBOEmitirTests {
     // A pre-defined dummy command.
     class DummyCommand : TypeOnlyCommandData()
     private var ledgerServices = MockServices(listOf("net.corda.training"))
@@ -51,7 +51,7 @@ class IOUIssueTests {
      *   función [requireSingleCommand] que recibe un parámetro.
      */
     @Test
-    fun mustIncludeIssueCommand() {
+    fun tieneQueIncluirComandoEmitir() {
         val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -86,7 +86,7 @@ class IOUIssueTests {
      * [ContratoTDBO.verify].
      */
     @Test
-    fun issueTransactionMustHaveNoInputs() {
+    fun transaccionEmitirNoPuedeTenerEntradas() {
         val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -110,7 +110,7 @@ class IOUIssueTests {
      * Consejo: Escriba una restricción adicional dentro del bloque [requireThat] que creaste en la tarea anterior.
      */
     @Test
-    fun issueTransactionMustHaveOneOutput() {
+    fun transaccionEmitirTieneQueTenerUnaSalida() {
         val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {
@@ -147,7 +147,7 @@ class IOUIssueTests {
      *   [EstadoTDBO.amount.quantity].
      */
     @Test
-    fun cannotCreateZeroValueIOUs() {
+    fun noPuedeCrearTDBOSConValorCero() {
         ledgerServices.ledger {
             transaction {
                 command(listOf(ALICE.publicKey, BOB.publicKey), ContratoTDBO.Commands.Emitir())
@@ -181,7 +181,7 @@ class IOUIssueTests {
      * - Esta comprobación se debe hacer antes de revisar quienes han firmado.
      */
     @Test
-    fun lenderAndBorrowerCannotBeTheSame() {
+    fun deudorYPrestamistaNoPuedenSerElMismo() {
         val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         val prestamistaEsDeudorTDBO = EstadoTDBO(10.POUNDS, ALICE.party, ALICE.party)
         ledgerServices.ledger {
@@ -218,7 +218,7 @@ class IOUIssueTests {
      * - https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/to-set.html
      */
     @Test
-    fun lenderAndBorrowerMustSignIssueTransaction() {
+    fun deudorYPrestamistaDebenFirmarLaTransaccion() {
         val tdbo = EstadoTDBO(1.POUNDS, ALICE.party, BOB.party)
         ledgerServices.ledger {
             transaction {

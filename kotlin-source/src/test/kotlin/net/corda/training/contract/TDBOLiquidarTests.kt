@@ -27,10 +27,10 @@ import java.util.*
  * El objetivo es escribir código de contrato que verifique una transacción de liquidar un [EstadoTDBO].
  * Liquidar es un poco mas complejo que transferir y emitir ya que requiere el uso de multiples tipos de estado
  * en una transacción.
- * Como con los [IOUIssueTests] y [IOUTransferTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición
+ * Como con los [TDBOEmitirTests] y [TDBOTransferirTests] descomenta cada prueba y ejecutala una a la vez. Utiliza la definición
  * de las pruebas y la descripción de cada tarea para determinar como pasar las pruebas.
  */
-class IOUSettleTests {
+class TDBOLiquidarTests {
     private fun createCashState(amount: Amount<Currency>, owner: AbstractParty): Cash.State {
         val defaultRef = ByteArray(1, { 1 })
         return Cash.State(amount = amount `issued by`
@@ -50,7 +50,7 @@ class IOUSettleTests {
      * Consejo: Por el momento puedes dejar el cuerpo vacio.
      */
     @Test
-    fun mustIncludeSettleCommand() {
+    fun debeIncluidComandoLiquidar() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         val cashEntrada = createCashState(5.POUNDS, BOB.party)
         val cashSalida = cashEntrada.withNewOwner(newOwner = ALICE.party).ownableState
@@ -102,7 +102,7 @@ class IOUSettleTests {
      *   Esto es como map / filter son utilizados en Kotlin.
      */
     @Test
-    fun mustBeOneGroupOfIOUs() {
+    fun debeSerUnGrupoDeTDBOs() {
         val tdboUno = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         val tdboDos = EstadoTDBO(5.POUNDS, ALICE.party, BOB.party)
         val cashEntrada = createCashState(5.POUNDS, BOB.party)
@@ -136,7 +136,7 @@ class IOUSettleTests {
      * TODO: Agrega una restricción para comprobar que siempre exista un TDBO de entrada.
      */
     @Test
-    fun mustHaveOneInputIOU() {
+    fun debeTenerUnTDBODeEntrada() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         val tdboUno = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         val diezLibras = createCashState(10.POUNDS, BOB.party)
@@ -177,7 +177,7 @@ class IOUSettleTests {
      * - Use la función [outputsOfType] para filtrar lassalidas de la transacción por tipo, en este caso [Cash.State].
      */
     @Test
-    fun mustBeCashOutputStatesPresent() {
+    fun estadosCashDebenEstarPresentes() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val cash = createCashState(5.DOLLARS, BOB.party)
         val pagoEnCash = cash.withNewOwner(newOwner = ALICE.party)
@@ -212,7 +212,7 @@ class IOUSettleTests {
      * - Una vez hayamos filtrado la lista, podemos sumar el cash pagado al prestamista para saber cuánto está liquidando.
      */
     @Test
-    fun mustBeCashOutputStatesWithRecipientAsOwner() {
+    fun debeTenerEstadosCashDeSalidaConElRecibidorComoPropietario() {
         val tdbo = EstadoTDBO(10.POUNDS, ALICE.party, BOB.party)
         val cash = createCashState(5.POUNDS, BOB.party)
         val pagoCashInvalido = cash.withNewOwner(newOwner = CHARLIE.party)
@@ -253,7 +253,7 @@ class IOUSettleTests {
      *   que la cantidad que pagamos no sea demasiado.
      */
     @Test
-    fun cashSettlementAmountMustBeLessThanRemainingIOUAmount() {
+    fun laCantidadDeCashConLaQueLiquidaDebeSerMenorALaCantidadRestanteDelTDBO() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val onceDolares = createCashState(11.DOLLARS, BOB.party)
         val diezDolares = createCashState(10.DOLLARS, BOB.party)
@@ -296,7 +296,7 @@ class IOUSettleTests {
      * Consejo: Lee y comprende las pruebas.
      */
     @Test
-    fun cashSettlementMustBeInTheCorrectCurrency() {
+    fun elCashUtilizadoParaLiquidarDebeSerDeLaMonedaCorrecta() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val diezDolares = createCashState(10.DOLLARS, BOB.party)
         val diezLibras = createCashState(10.POUNDS, BOB.party)
@@ -329,7 +329,7 @@ class IOUSettleTests {
      * Consejo: Puedes usar un "if" y comparar el total de la cantidad pagada vs lo que falta por pagar.
      */
     @Test
-    fun mustOnlyHaveOutputIOUIfNotFullySettling() {
+    fun debTenerSoloUnTDBODeSalidaSiNoSeLiquidaCompleamente() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val diezDolares = createCashState(10.DOLLARS, BOB.party)
         val cincoDolares = createCashState(5.DOLLARS, BOB.party)
@@ -377,7 +377,7 @@ class IOUSettleTests {
      * TODO: Escribe una restricción para verificar que solo la propiedad [EstadoTDBO.pagado] cambie cuando liquidamos.
      */
     @Test
-    fun onlyPaidPropertyMayChange() {
+    fun soloLaPropiedadPagadoPuedeCambiar() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val cincoDolares = createCashState(5.DOLLARS, BOB.party)
         ledgerServices.ledger {
@@ -426,7 +426,7 @@ class IOUSettleTests {
      * TODO: Añada una restricción al codigo de contrato que asegure lo mencionado arriba.
      */
     @Test
-    fun mustBeSignedByAllParticipants() {
+    fun debeSerFirmadoPorTodosLosParticipantes() {
         val tdbo = EstadoTDBO(10.DOLLARS, ALICE.party, BOB.party)
         val cash = createCashState(5.DOLLARS, BOB.party)
         val pagoCash = cash.withNewOwner(newOwner = ALICE.party)
