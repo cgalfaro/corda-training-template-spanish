@@ -31,10 +31,10 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 /**
- * Este API es accesible desde /api/iou. Las rutas de los endpoints especificados abajo son relativos a la ruta anterior.
+ * Este API es accesible desde /api/tdbo. Las rutas de los endpoints especificados abajo son relativos a la ruta anterior.
  * Hemos definido varios endpoints para manejar los TDBOs, cash y las distintas operaciones que se pueden hacer con ellos.
  */
-@Path("iou")
+@Path("tdbo")
 class IOUApi(val rpcOps: CordaRPCOps) {
     private val me = rpcOps.nodeInfo().legalIdentities.first().name
 
@@ -53,19 +53,19 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Devuelve el nombre del nodo.
      */
     @GET
-    @Path("me")
+    @Path("yo")
     @Produces(MediaType.APPLICATION_JSON)
-    fun whoami() = mapOf("me" to me.toString())
+    fun whoami() = mapOf("yo" to me.toString())
 
     /**
      * Devuelve todos los participantes registrados en el [NetworkMapService]. Estos nombres pueden ser utilizados para buscar identidades
      * usando el [IdentityService].
      */
     @GET
-    @Path("peers")
+    @Path("contrapartes")
     @Produces(MediaType.APPLICATION_JSON)
     fun getPeers(): Map<String, List<String>> {
-        return mapOf("peers" to rpcOps.networkMapSnapshot()
+        return mapOf("contrapartes" to rpcOps.networkMapSnapshot()
                 .filter { isNotary(it).not() && isMe(it).not() && isNetworkMap(it).not() }
                 .map { it.legalIdentities.first().name.toX500Name().toDisplayString() })
     }
@@ -77,7 +77,7 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Consejo - Utilice [rpcOps] para buscar en la bóveda todos los [EstadoTDBO]s no consumidos.
      */
     @GET
-    @Path("ious")
+    @Path("tdbos")
     @Produces(MediaType.APPLICATION_JSON)
     fun getIOUs(): List<StateAndRef<ContractState>> {
         // Filtro por tipo de estado: EstadoTDBO.
@@ -108,7 +108,7 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Inicia el flujo para que dos participantes acuerden un TDBO.
      */
     @GET
-    @Path("issue-iou")
+    @Path("emitir-iou")
     fun issueIOU(@QueryParam(value = "cantidad") amount: Int,
                  @QueryParam(value = "moneda") currency: String,
                  @QueryParam(value = "participante") party: String): Response {
@@ -138,7 +138,7 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Transfiere un TDBO especificado por [linearId] a un nuevo participante.
      */
     @GET
-    @Path("transfer-iou")
+    @Path("transferir-iou")
     fun transferIOU(@QueryParam(value = "id") id: String,
                     @QueryParam(value = "participante") party: String): Response {
         val linearId = UniqueIdentifier.fromString(id)
@@ -161,7 +161,7 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * curl -X PUT 'http://localhost:10007/api/iou/issue-iou?amount=99&currency=GBP&party=O=ParticipantC,L=New%20York,C=US
      */
     @GET
-    @Path("settle-iou")
+    @Path("liquidar-iou")
     fun settleIOU(@QueryParam(value = "id") id: String,
                   @QueryParam(value = "cantidad") amount: Int,
                   @QueryParam(value = "moneda") currency: String): Response {
@@ -184,7 +184,7 @@ class IOUApi(val rpcOps: CordaRPCOps) {
      * Endpoint asistente para emitir algo de cash para nosotros.
      */
     @GET
-    @Path("self-issue-cash")
+    @Path("auto-emitir-cash")
     fun selfIssueCash(@QueryParam(value = "cantidad") amount: Int,
                       @QueryParam(value = "moneda") currency: String): Response {
         val cantidadAEmitir = Amount(amount.toLong() * 100, Currency.getInstance(currency))

@@ -5,7 +5,7 @@ import net.corda.training.api.IOUApi
 import net.corda.webserver.services.WebServerPluginRegistry
 import java.util.function.Function
 
-class IOUPlugin : WebServerPluginRegistry {
+class TDBOPlugin : WebServerPluginRegistry {
     /**
      * Una lista de clases que esponen los APIs web.
      */
@@ -18,6 +18,6 @@ class IOUPlugin : WebServerPluginRegistry {
     override val staticServeDirs: Map<String, String> = mapOf(
             // This will serve the iouWeb directory in resources to /web/template
             // Esto entregará el directorio iouweb en resources a /web/Template
-            "iou" to javaClass.classLoader.getResource("iouWeb").toExternalForm()
+            "tdbo" to javaClass.classLoader.getResource("tdboWeb").toExternalForm()
     )
 }
