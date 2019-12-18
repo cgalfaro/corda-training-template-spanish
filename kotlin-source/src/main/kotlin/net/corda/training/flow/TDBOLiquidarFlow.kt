@@ -101,7 +101,7 @@ class TDBOLiquidarFlow(val linearId: UniqueIdentifier, val cantidadAPagar: Amoun
  * La firma es manejada por el [SignTransactionFlow].
  */
 @InitiatedBy(TDBOLiquidarFlow::class)
-class IOUSettleFlowResponder(val flowSession: FlowSession): FlowLogic<SignedTransaction>() {
+class TDBOLiquidarFlowResponder(val flowSession: FlowSession): FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call() : SignedTransaction {
 

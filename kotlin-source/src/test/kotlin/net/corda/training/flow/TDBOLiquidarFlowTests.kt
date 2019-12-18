@@ -42,7 +42,7 @@ class TDBOLiquidarFlowTests {
         val startedNodes = arrayListOf(a, b, c)
         // Para nodos reales esto pasa automaticamente, pero necesitamos registrar a mano el flujo para las pruebas
         startedNodes.forEach { it.registerInitiatedFlow(TDBOEmitirFlowResponder::class.java) }
-        startedNodes.forEach { it.registerInitiatedFlow(IOUSettleFlowResponder::class.java) }
+        startedNodes.forEach { it.registerInitiatedFlow(TDBOLiquidarFlowResponder::class.java) }
         mockNetwork.runNetwork()
     }
 
