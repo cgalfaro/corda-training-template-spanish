@@ -35,11 +35,11 @@ import javax.ws.rs.core.Response
  * Hemos definido varios endpoints para manejar los TDBOs, cash y las distintas operaciones que se pueden hacer con ellos.
  */
 @Path("tdbo")
-class IOUApi(val rpcOps: CordaRPCOps) {
+class TDBOApi(val rpcOps: CordaRPCOps) {
     private val me = rpcOps.nodeInfo().legalIdentities.first().name
 
     companion object {
-        private val logger: Logger = loggerFor<IOUApi>()
+        private val logger: Logger = loggerFor<TDBOApi>()
     }
 
     fun X500Name.toDisplayString() : String  = BCStyle.INSTANCE.toString(this)
