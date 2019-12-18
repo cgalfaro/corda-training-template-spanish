@@ -108,7 +108,7 @@ class TDBOApi(val rpcOps: CordaRPCOps) {
      * Inicia el flujo para que dos participantes acuerden un TDBO.
      */
     @GET
-    @Path("emitir-iou")
+    @Path("emitir-tdbo")
     fun issueIOU(@QueryParam(value = "cantidad") amount: Int,
                  @QueryParam(value = "moneda") currency: String,
                  @QueryParam(value = "participante") party: String): Response {
@@ -138,7 +138,7 @@ class TDBOApi(val rpcOps: CordaRPCOps) {
      * Transfiere un TDBO especificado por [linearId] a un nuevo participante.
      */
     @GET
-    @Path("transferir-iou")
+    @Path("transferir-tdbo")
     fun transferIOU(@QueryParam(value = "id") id: String,
                     @QueryParam(value = "participante") party: String): Response {
         val linearId = UniqueIdentifier.fromString(id)
@@ -161,7 +161,7 @@ class TDBOApi(val rpcOps: CordaRPCOps) {
      * curl -X PUT 'http://localhost:10007/api/iou/issue-iou?amount=99&currency=GBP&party=O=ParticipantC,L=New%20York,C=US
      */
     @GET
-    @Path("liquidar-iou")
+    @Path("liquidar-tdbo")
     fun settleIOU(@QueryParam(value = "id") id: String,
                   @QueryParam(value = "cantidad") amount: Int,
                   @QueryParam(value = "moneda") currency: String): Response {

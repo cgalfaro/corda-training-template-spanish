@@ -23,9 +23,9 @@ COMING WEEKS, WE'LL WRITE A TUTORIAL ON HOW BEST TO DO THIS.
     <p>The the web API to interact with this CorDapp, end-points available:</p>
     <ul>
         <li>GET /api/tdbo/tdbos (list IOUs)</li>
-        <li>GET /api/tdbo/emitir-iou?amount=INTEGER&currency=[GBP/USD]&party=NODE_NAME (issue an IOU to a party with a specified amount and currency)</li>
-        <li>GET /api/tdbo/transferir-iou?id=LINEAR_ID&party=NODE_NAME (Transfer an IOU specified by linearId to another party</li>
-        <li>GET /api/tdbo/liquidar-iou?id=LINEAR_ID&amount=INTEGER&currency=[GBP/USD] (settle an amount of an IOU specified by linearId)</li>
+        <li>GET /api/tdbo/emitir-tdbo?amount=INTEGER&currency=[GBP/USD]&party=NODE_NAME (issue an IOU to a party with a specified amount and currency)</li>
+        <li>GET /api/tdbo/transferir-tdbo?id=LINEAR_ID&party=NODE_NAME (Transfer an IOU specified by linearId to another party</li>
+        <li>GET /api/tdbo/liquidar-tdbo?id=LINEAR_ID&amount=INTEGER&currency=[GBP/USD] (settle an amount of an IOU specified by linearId)</li>
         <li>GET /api/tdbo/cash (list all cash states)</li>
         <li>GET /api/tdbo/auto-emitir-cash?amount=INTEGER&currency=[GBP/USD] (self issues an amount of cash in the specified currency)</li>
         <li>GET /api/tdbo/cash-balances (lists cash balances per currency)</li>
